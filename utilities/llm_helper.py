@@ -1,5 +1,7 @@
 """Module managing LLM interaction"""
 from openai import AzureOpenAI
+from openai.types.beta.assistant import ToolFunction        as ToolFunction
+from openai.types.beta.assistant import ToolCodeInterpreter as ToolCodeInterpreter
 
 if __name__ == '__main__':
     from env_helper   import EnvHelper
@@ -23,19 +25,8 @@ class LLMHelper:
         self.openai_deployment = env_helper.AZURE_OPENAI_MODEL_DEPLOYMENT_NAME
         self.verbose = True
 
-    def get_completion(self, messages):
-        """Get completion"""
-        completion = self.llm_client.chat.completions.create(
-            model=self.openai_deployment,
-            messages=messages
-        )
-
-        completion_text = completion.choices[0].message.content
-
-        return completion_text
 
     def create_assistant(self, assistant_name : str, instructions : str, tools : list):
-        """Create Assistant"""
         assistant = self.llm_client.beta.assistants.create(
             name=assistant_name,
             instructions=instructions,
@@ -44,34 +35,106 @@ class LLMHelper:
         )
 
         return assistant
-    
+
+    def create_assistant_file(self, assistant_id, file_id):
+        # Upload the file to OpenAI
+        file_upload_to_assistant_response = self.llm_client.beta.assistants.files.create(
+            assistant_id, file_id=file_id
+        )
+
+        if  file_upload_to_assistant_response.id is not None:
+            return True
+        else: 
+            self.observability_helper.log_message(f"Uploading file to assistant failed", self.verbose)
+            return False
+
     def get_assistants(self):
         """List Assistants"""
-        assistant_list = self.llm_client.beta.assistants.list().data
+        assistant_file_list = self.llm_client.beta.assistants.list().data
+
+        return assistant_file_list
+
+    def get_assistant_files(self, assistant_id):
+        assistant_list = self.llm_client.beta.assistants.files(assistant_id)
 
         return assistant_list
 
+    def get_assistant(self, assistant_id):
+        assistant = self.llm_client.beta.assistants.retrieve(assistant_id)
+        return assistant
+
+    #TODO
+    def get_assistant_file(self, assistant_id, file_id):
+        return None
+
+    #TODO
+    def modify_assistant(self, assistant_id, assistant_data_model):
+        return None
+
+    #TODO
+    def delete_assistant(self, assistant_id):
+        return None
+
+    #TODO
+    def delete_assistant_file(self, assistant_id, file_id):
+        return None
+    
     def create_assistant_thread(self):
         """Create Assistant Thread"""
         thread = self.llm_client.beta.threads.create()
 
         return thread
 
+    #TODO
+    def get_assistant_thread(self, thread_id):
+        return None
 
-    def add_message_to_assistant_thread(self, thread, message_role, message_content, file_ids):
+    #TODO
+    def modify_assistant_thread(self, thread_id):
+        return None
+
+    #TODO
+    def delete_assistant_thread(self, thread_id):
+        return None
+
+    def add_message_to_assistant_thread(self, thread_id, message_role, message_content, file_ids):
         """Add message to Assistant thread"""
 
         self.observability_helper.log_message(f"Creating message to thread with file ids:  {file_ids}", self.verbose)
 
         self.llm_client.beta.threads.messages.create(
-            thread_id=thread.id,
+            thread_id=thread_id,
             role=message_role,
             content=message_content,
             file_ids=file_ids
+        )
 
-            )
+    def get_messages_in_assistant_thread(self, thread_id):
+        """List messages in thread"""
+        messages = self.llm_client.beta.threads.messages.list(thread_id=thread_id)
 
-    def run_assistant(self, thread, assistant_id, run_instructions):
+        return messages
+
+    #TODO
+    def get_files_in_assistant_thread_message(self, thread_id, message_id):
+        return None
+    
+    #TODO
+    def get_assistant_thread_message(self, thread_id, message_id):
+        return None
+
+
+        #TODO
+   
+    #TODO
+    def get_file_in_assistant_thread_message(self, thread_id, message_id, file_id):
+        return None
+
+    #TODO
+    def modify_assistant_thread_message(self, thread_id, message_id, metadata):
+        return None
+
+    def create_assistant_thread_run(self, thread, assistant_id, run_instructions):
         """Run Assistant"""
         run = self.llm_client.beta.threads.runs.create(
             thread_id=thread.id,
@@ -82,25 +145,48 @@ class LLMHelper:
 
         return run
 
-    def list_messages_in_assistant_thread(self, thread):
-        """List messages in thread"""
-        messages = self.llm_client.beta.threads.messages.list(thread_id=thread.id)
+    #TODO
+    def create_assistant_thread_run_and_run_it(self, metadata):
+        return None
 
-        return messages
-    
-    def retrieve_run(self, thread, run):
+    #TODO
+    def get_assistant_thread_runs(self, thread_id):
+        return None
+
+    #TODO
+    def get_assistant_thread_run_steps(self, thread_id, run_id):
+        return None
+
+    def get_assistant_thread_run(self, thread_id, run_id):
         run = self.llm_client.beta.threads.runs.retrieve(
-            thread_id=thread.id,
-            run_id=run.id
+            thread_id=thread_id,
+            run_id=run_id
         )
 
         return run
     
-    def get_thread_messages(self, thread):
-        messages = self.llm_client.beta.threads.messages.list(thread_id=thread.id)
+    #TODO
+    def get_assistant_thread_run_step(self, thread_id, run_id, step_id):
+        return None
+
+    #TODO
+    def modify_assistant_thread_run(self, thread_id, run_id, metadata):
+        return None
+
+    #TODO
+    def submit_tool_outputs_to_assistant_thread_run(self, thread_id, run_id, metadata):
+        return None
+
+    #TODO
+    def cancel_assistant_thread_runs(self, thread_id, run_id):
+        return None
+
+    def get_assistant_thread_messages(self, thread_id):
+        messages = self.llm_client.beta.threads.messages.list(thread_id=thread_id)
 
         return messages
-    
+
+#FILES 
     def upload_file(self, file_byte_data):
         # Upload the file to OpenAI
         file_upload_response = self.llm_client.files.create(
@@ -112,19 +198,6 @@ class LLMHelper:
         else: 
             self.observability_helper.log_message(f"Uploading failed with status {file_upload_response.status}", self.verbose)
             return False, None
-
-
-    def upload_file_to_assistant(self, assistant_id, file_id):
-        # Upload the file to OpenAI
-        file_upload_to_assistant_response = self.llm_client.beta.assistants.files.create(
-            assistant_id, file_id=file_id
-        )
-
-        if  file_upload_to_assistant_response.id is not None:
-            return True
-        else: 
-            self.observability_helper.log_message(f"Uploading file to assistant failed", self.verbose)
-            return False
 
     def delete_all_files(self):
         # Upload the file to OpenAI
@@ -145,6 +218,40 @@ class LLMHelper:
             print(f"Deleting file  with id {file_id}")
             self.llm_client.files.delete(file_id)
 
+    def get_completion(self, messages):
+        completion = self.llm_client.chat.completions.create(
+            model=self.openai_deployment,
+            messages=messages
+        )
+
+        completion_text = completion.choices[0].message.content
+
+        return completion_text
+
+    def get_file(self, file_id):
+        file = self.llm_client.files.retrieve(file_id)
+        return file
+
+
+################# OBJECT OPERATIONS
+    def get_functions_from_assistant(self, assistant_instance):
+        tool_functions = [tool for tool in assistant_instance.tools if isinstance(tool, ToolFunction)]
+        return tool_functions
+
+    def assistant_has_code_interpreter(self, assistant_instance):
+        tool_code_interpreter = [tool for tool in assistant_instance.tools if isinstance(tool, ToolCodeInterpreter)]
+        return len(tool_code_interpreter) > 0
+    
+    def get_files_from_assistant(self, assistant_instance):
+        assistant_files = [self.get_file(file_id) for file_id in assistant_instance.file_ids ]
+        return assistant_files
+
+
 if __name__ == '__main__':
     llm_helper = LLMHelper()
-    llm_helper.delete_all_files()
+    #llm_helper.delete_all_files()
+    assistant = llm_helper.get_assistants()[0]
+    #assistant = Assistant()
+
+    print(assistant)
+    

@@ -15,29 +15,38 @@ class Manager:
         self.observability_helper.log_message("New Manager created")
         self.uploaded_files = {}
 
-    def get_completion(self, prompt):
-        """Get completion. Useful for basic testing"""
-        self.llm_helper.get_completion(prompt)
-
     def are_there_assistants(self):
         """Checks if are the assistants"""
-        return len(self.get_list_of_assistants()) > 0
+        return len(self.get_assistant_list()) > 0
 
-    def get_list_of_assistants(self):
+    def get_assistant_list(self):
         """Get Assistant list"""
         assistant_list = self.llm_helper.get_assistants()
         return assistant_list
 
+    def get_assistant_id_name_list(self):
+        """Get Assistant id and names"""
+        assistant_list = self.get_assistant_list()
+        assistant_name_id_list = [(assistant.id, assistant.name) for assistant in assistant_list]
+
+        return assistant_name_id_list
+    
     def get_assistant_name_list(self):
         """Get Assistant names"""
-        assistant_list = self.llm_helper.get_assistants()
+        assistant_list = self.get_assistant_list()
         assistant_name_list = [assistant.name for assistant in assistant_list]
 
         return assistant_name_list
 
+    def get_assistant(self, assistant_id):
+        """Get Assistant by id"""
+        assistant = self.llm_helper.get_assistant(assistant_id)
+        
+        return assistant
+
     def get_assistant_field(self, assistant_name, assistant_field):
         """Gets a field of a given assistance"""
-        assistant_list = self.llm_helper.get_assistants()
+        assistant_list = self.get_assistant_list()
         assistant_field = [getattr(assistant, assistant_field, "") for assistant in assistant_list if assistant.name == assistant_name][0]
 
         return assistant_field
@@ -49,13 +58,13 @@ class Manager:
         assistant_file_ids = self.uploaded_files.get(assistant_id, [])
         self.llm_helper.add_message_to_assistant_thread(thread, "user", prompt, assistant_file_ids)
 
-        run = self.llm_helper.run_assistant(thread, assistant_id, "Be good")
+        run = self.llm_helper.create_assistant_thread_run_and_run_it(thread.id, assistant_id, "Be good")
 
         while run.status != "completed":
             time.sleep(1)
-            run = self.llm_helper.retrieve_run(thread, run)
+            run = self.llm_helper.get_assistant_thread_run(thread.id, run.id)
 
-        messages = self.llm_helper.get_thread_messages(thread)
+        messages = self.llm_helper.get_assistant_thread_messages(thread.id)
 
         return messages.data[0].content[0].text.value
 
@@ -90,7 +99,7 @@ class Manager:
         if upload_success:
             self.observability_helper.log_message(f"Upload to AOAI OK. File id {file_id}", verbose)
             assistant_id = self.get_assistant_field(assistant_name, "id")
-            if self.llm_helper.upload_file_to_assistant(assistant_id, file_id):
+            if self.llm_helper.create_assistant_file(assistant_id, file_id):
                 self.track_assistant_file(assistant_id, file_id)
                 self.observability_helper.log_message(f"Uploading file {file_id} to assistant id {assistant_id} OK", verbose)
                 upload_to_assistant = True
