@@ -11,9 +11,9 @@ def check_openai_config():
             st.session_state['manager'].env_helper.OPENAI_API_KEY, 
             st.session_state['manager'].env_helper.AZURE_OPENAI_MODEL_DEPLOYMENT_NAME
         )
-        st.success("LLM is working!")
+        st.success(content.VARIABLE_CONFIG_PAGE_OPENAI_OK)
     except Exception as e:
-        st.error(f"Not valid config" )
+        st.error(content.VARIABLE_CONFIG_PAGE_OPENAI_KO )
 
 def on_change_aoai_api_base():
    st.session_state['manager'].env_helper.OPENAI_API_BASE = st.session_state['aoai_api_base']

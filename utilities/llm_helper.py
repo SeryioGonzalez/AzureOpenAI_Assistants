@@ -10,6 +10,7 @@ else:
     from utilities.env_helper   import EnvHelper
     from utilities.observability_helper import ObservabilityHelper
 
+import json
 import io
 
 class LLMHelper:
@@ -24,7 +25,6 @@ class LLMHelper:
         )
         self.openai_deployment = self.env_helper.AZURE_OPENAI_MODEL_DEPLOYMENT_NAME
         self.verbose = True
-
 
     def create_assistant(self, assistant_name : str, instructions : str, tools : list):
         assistant = self.llm_client.beta.assistants.create(
@@ -68,9 +68,8 @@ class LLMHelper:
         return None
 
     #TODO
-    def modify_assistant(self, assistant_id, assistant_data_model):
+    def modify_assistant(self, assistant_id, assistant):
         return None
-
     #TODO
     def delete_assistant(self, assistant_id):
         return None
@@ -187,6 +186,32 @@ class LLMHelper:
 
         return messages
 
+#FUNCTIONS
+    def _tools_to_json(self, assistant_tools):
+        tool_list = []
+        for assistant_tool in assistant_tools:
+            if assistant_tool.type == "function":
+                this_tool = {"type": "function", "function": assistant_tool.function.__dict__}
+            elif assistant_tool.type == "code_interpreter":
+                this_tool = {"type": "code_interpreter"}
+            else:
+               self.observability_helper.log_message(f"ERROR - NOT CONSIDERED TOOL TYPE {assistant_tool.type}", self.verbose) 
+            
+            tool_list.append(this_tool)
+        return tool_list
+
+    def update_assistant_functions(self, assistant_id, new_function_data):
+        assistant_data  = self.get_assistant(assistant_id)
+        assistant_tools = self._tools_to_json(assistant_data.tools)
+        new_tool = {"type": "function", "function": json.loads(new_function_data)}
+        assistant_tools.append(new_tool)
+        
+        self.observability_helper.log_message(f"Adding tool {new_tool['function']} to assistant {assistant_id}", self.verbose)
+        
+        self.llm_client.beta.assistants.update(assistant_id, 
+            tools        = assistant_tools
+        )
+
 #FILES 
     def upload_file(self, file_byte_data):
         # Upload the file to OpenAI
@@ -245,7 +270,6 @@ class LLMHelper:
         file = self.llm_client.files.retrieve(file_id)
         return file
 
-
 ################# OBJECT OPERATIONS
     def get_functions_from_assistant(self, assistant_instance):
         tool_functions = [tool for tool in assistant_instance.tools if isinstance(tool, ToolFunction)]
@@ -259,6 +283,13 @@ class LLMHelper:
         assistant_files = [self.get_file(file_id) for file_id in assistant_instance.file_ids ]
         return assistant_files
 
+    def validate_function_json(self, function_text):
+        try:
+            # Attempt to parse the string as JSON
+            json.loads(function_text)
+            return True  # Parsing succeeded, the string is valid JSON
+        except json.JSONDecodeError:
+            return False  # Parsing failed, the string is not valid JSON
 
 if __name__ == '__main__':
     llm_helper = LLMHelper()

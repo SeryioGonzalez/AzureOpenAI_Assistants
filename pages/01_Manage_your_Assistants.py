@@ -63,23 +63,34 @@ if st.session_state['manager'].are_there_assistants():
 #Assistant Tools
     st.markdown(f"<div style='text-align: center;'>{content.MANAGE_SELECTED_ASSISTANT_TOOLS}</div>", unsafe_allow_html=True)
 #Assistant Functions
-    st.write(content.MANAGE_SELECTED_ASSISTANT_FUNCTIONS)
     functions_data_list = get_assistant_data(selected_assistant_functions)
 
-    col_1, col_2 = st.columns([2,2])
+    with st.form("my_form"):
+        with st.expander("Add Function"):
+            new_function_body   = st.text_area("New function", key="manage_text_new_function" , height=400)
+            new_function_submit = st.form_submit_button("Save function")
+    if (new_function_submit):
+        if st.session_state['manager'].llm_helper.validate_function_json(new_function_body):
+            st.session_state['manager'].llm_helper.update_assistant_functions(selected_assistant_id, new_function_body)
+        else:
+            st.error(content.MANAGE_ASSISTANT_NEW_FUNCTION_NOT_VALID )
+
+    st.write(content.MANAGE_SELECTED_ASSISTANT_FUNCTIONS)
     for function_data in functions_data_list:
-        with col_1:
-            with st.expander(function_data['name']):
-                st.text_area("Function definition", key="function_definition_" + function_data['name'] , value=function_data['definition'], height=400)
-        with col_2:
+        with st.expander(function_data['name']):
+            st.text_area("Function definition", key="function_definition_" + function_data['name'] , value=function_data['definition'], height=400)
             st.button("Delete", key="delete_" + function_data['name'])
 
     st.write(content.MANAGE_SELECTED_ASSISTANT_CAPABILITIES)
     st.toggle(content.MANAGE_SELECTED_ASSISTANT_CAPABILITIES_CODE_INTERPRETER, value=selected_assistant_has_code_interpreter)
 #Assistant files
     st.markdown(f"<div style='text-align: center;'>{content.MANAGE_SELECTED_ASSISTANT_FILES}</div>", unsafe_allow_html=True)
-    file_data_list = get_file_data(selected_assistant_files)
-    st.write(file_data_list)
+    
+    if len(selected_assistant_files) > 0:
+        file_data_list = get_file_data(selected_assistant_files)
+        st.write(file_data_list)
+    else:
+        st.write(content.MANAGE_NO_FILE_MESSAGE)
 
 else:
     st.write(content.MAIN_NO_ASSISTANT_TEXT)
