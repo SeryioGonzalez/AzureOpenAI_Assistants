@@ -12,8 +12,13 @@ class Manager:
         self.llm_helper = LLMHelper()
         self.env_helper= EnvHelper()
         self.observability_helper = ObservabilityHelper()
-        self.observability_helper.log_message("New Manager created")
+        self.verbose = True
+        self.observability_helper.log_message("New Manager created", self.verbose)
         self.uploaded_files = {}
+        self.session_container = {}
+
+    def log(self, log_message):
+        self.observability_helper.log_message(log_message, self.verbose)
 
     def are_there_assistants(self):
         """Checks if are the assistants"""
@@ -51,21 +56,33 @@ class Manager:
 
         return assistant_field
 
-    def run_thread(self, prompt, assistant_name):
+    def run_thread(self, user_session_id, prompt, assistant_id):
         """Runs a thread with the assistant"""
-        thread = self.llm_helper.create_assistant_thread()
-        assistant_id = self.get_assistant_field(assistant_name, "id")
+        if user_session_id not in self.session_container:
+            thread = self.llm_helper.create_assistant_thread()
+            self.session_container[user_session_id] = {}
+            self.session_container[user_session_id][assistant_id] = thread
+        else:
+            if assistant_id not in self.session_container[user_session_id]:
+                thread = self.llm_helper.create_assistant_thread()
+                self.session_container[user_session_id][assistant_id] = thread
+
+        thread = self.session_container[user_session_id][assistant_id]
+
         assistant_file_ids = self.uploaded_files.get(assistant_id, [])
         self.llm_helper.add_message_to_assistant_thread(thread, "user", prompt, assistant_file_ids)
 
-        run = self.llm_helper.create_assistant_thread_run_and_run_it(thread.id, assistant_id, "Be good")
+        run = self.llm_helper.create_assistant_thread_run(thread, assistant_id, "Be good")
 
         while run.status != "completed":
             time.sleep(1)
             run = self.llm_helper.get_assistant_thread_run(thread.id, run.id)
 
-        messages = self.llm_helper.get_assistant_thread_messages(thread.id)
+        raw_messages = self.llm_helper.get_assistant_thread_messages(thread.id)
 
+        message_info = [{'message_value':message.content[0].text.value, 'message_role': message.role} for message in raw_messages.data ]
+
+        return message_info
         return messages.data[0].content[0].text.value
 
     def upload_file(self, uploaded_file, verbose=False):
