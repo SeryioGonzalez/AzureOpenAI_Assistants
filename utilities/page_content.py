@@ -35,6 +35,7 @@ MANAGE_TITLE_TEXT = "Manage your Azure OpenAI Assistants"
 MANAGE_UPDATE_ASSISTANT_INSTRUCTIONS = "Update Instructions"
 
 #VARIABLE CONFIGURATION PAGE
+VARIABLE_PAGE_HEADER = "Azure service configuration"
 VARIABLE_CONFIG_PAGE_OPENAI_DEPLOYMENT_FIELD = "Azure OpenAI Deployment Name"
 VARIABLE_CONFIG_PAGE_OPENAI_ENDPOINT_FIELD   = "Azure OpenAI Service Endpoint (https://YOUR_AOAI_RESOURCE_NAME.openai.azure.com/)"
 VARIABLE_CONFIG_PAGE_OPENAI_KEY_FIELD        = "Azure OpenAI Service Key"

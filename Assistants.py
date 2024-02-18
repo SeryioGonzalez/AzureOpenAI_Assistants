@@ -35,9 +35,10 @@ if st.session_state['manager'].are_there_assistants():
             st.write(content.MAIN_FILE_UPLOAD_KO)
 
 # Display chat messages from history on app rerun
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+    if 'messages' in st.session_state:
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
 
     if user_prompt := st.chat_input(content.MAIN_ASSISTANT_CHAT_WELCOME):
         st.session_state.messages.append({"role": "user", "content": user_prompt})
