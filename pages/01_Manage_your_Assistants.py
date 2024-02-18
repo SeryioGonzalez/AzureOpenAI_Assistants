@@ -31,6 +31,33 @@ def get_file_data(file_list):
 
     return pd.DataFrame(filtered_file_data)
 
+def update_function(function_data):
+    assistant_id, function_name = function_data
+    key = "function_definition_" + function_name
+    new_function_data = st.session_state[key]
+    
+    try:
+        new_function_json = json.loads(new_function_data)
+        st.session_state['manager'].observability_helper.log_message(f"Updating function {new_function_json['name']}", verbose=verbose)
+        st.session_state['manager'].llm_helper.update_assistant_function(assistant_id, new_function_json)
+    except json.JSONDecodeError:
+            st.session_state['manager'].observability_helper.log_message(f"Not a valid function JSON", verbose=verbose)
+
+def delete_function(function_data):
+    assistant_id, function_name = function_data
+    st.session_state['manager'].llm_helper.delete_assistant_function(assistant_id, function_name)
+
+def update_instructions(assistant_data):
+    assistant_id, previous_instructions = assistant_data
+    if previous_instructions != st.session_state['updated_instructions']:
+        st.session_state['manager'].observability_helper.log_message(f"For assistant {assistant_id} update instructions {st.session_state['updated_instructions']} from {previous_instructions}", verbose=verbose)
+        st.session_state['manager'].llm_helper.update_assistant_instructions(assistant_id, st.session_state['updated_instructions'])
+    else:
+        st.session_state['manager'].observability_helper.log_message(f"No updated instructions for assistant {assistant_id}", verbose=verbose)
+
+def update_code_interpreter(assistant_id):
+    st.session_state['manager'].observability_helper.log_message(f"For {assistant_id} code interpreter is {st.session_state['code_interpreter']}", verbose=verbose)
+    st.session_state['manager'].llm_helper.update_assistant_code_interpreter_tool(assistant_id, st.session_state['code_interpreter'])
 
 if 'initialized' not in st.session_state:
     manager = Manager()
@@ -47,7 +74,7 @@ if st.session_state['manager'].are_there_assistants():
     assistant_id_list   = [ assistant[0] for assistant in assistant_id_name_list]
     assistant_name_list = [ assistant[1] for assistant in assistant_id_name_list]
     
-    #Selected Assitant
+    #Selected Assistant
     selected_assistant_name  = st.selectbox(content.MANAGE_ASSISTANT_SELECT_TEXT, assistant_name_list)
     selected_assistant_index = assistant_name_list.index(selected_assistant_name)
     selected_assistant_id = assistant_id_list[selected_assistant_index]
@@ -63,7 +90,8 @@ if st.session_state['manager'].are_there_assistants():
 #ASSISTANT DISPLAY
     st.write(content.MANAGE_SELECTED_ASSISTANT_ID + f": {selected_assistant_id}")
 #Assistant Instructions
-    st.text_area(content.MANAGE_SELECTED_ASSISTANT_INSTRUCTIONS, assistant_instructions)
+    st.text_area(content.MANAGE_SELECTED_ASSISTANT_INSTRUCTIONS, assistant_instructions, key="updated_instructions")
+    st.button("Update Instructions", on_click=update_instructions, args=((selected_assistant_id,assistant_instructions),))
 #Assistant Tools
     st.markdown(f"<div style='text-align: center;'>{content.MANAGE_SELECTED_ASSISTANT_TOOLS}</div>", unsafe_allow_html=True)
 #Assistant Functions
@@ -77,7 +105,7 @@ if st.session_state['manager'].are_there_assistants():
     if (new_function_submit):
         if st.session_state['manager'].llm_helper.validate_function_json(new_function_body):
             if st.session_state['manager'].llm_helper.is_duplicated_function(selected_assistant_id, new_function_body) is False:
-                st.session_state['manager'].llm_helper.update_assistant_functions(selected_assistant_id, new_function_body)
+                st.session_state['manager'].llm_helper.create_assistant_function(selected_assistant_id, new_function_body)
                 st.session_state['manager'].observability_helper.log_message(f"New function added - refreshing", verbose=verbose)
                 st.rerun()
             else:
@@ -95,11 +123,14 @@ if st.session_state['manager'].are_there_assistants():
     st.write(content.MANAGE_SELECTED_ASSISTANT_FUNCTIONS)
     for function_data in functions_data_list:
         with st.expander(function_data['name']):
-            st.text_area("Function definition", key="function_definition_" + function_data['name'] , value=function_data['definition'], height=400)
-            st.button("Delete", key="delete_" + function_data['name'])
+            function_body = st.text_area("Function definition", key="function_definition_" + function_data['name'] , value=function_data['definition'], height=400)
+            #Keys
+            st.button("Update", key="update_" + function_data['name'], on_click=update_function, args=(((selected_assistant_id, function_data['name']),) ))
+            st.button("Delete", key="delete_" + function_data['name'], on_click=delete_function, args=(((selected_assistant_id, function_data['name']),) ))
 
+#OTHER TOOLS
     st.write(content.MANAGE_SELECTED_ASSISTANT_CAPABILITIES)
-    st.toggle(content.MANAGE_SELECTED_ASSISTANT_CAPABILITIES_CODE_INTERPRETER, value=selected_assistant_has_code_interpreter)
+    st.toggle(content.MANAGE_SELECTED_ASSISTANT_CAPABILITIES_CODE_INTERPRETER, on_change=update_code_interpreter, key="code_interpreter", args=(selected_assistant_id,),  value=selected_assistant_has_code_interpreter)
 #Assistant files
     st.markdown(f"<div style='text-align: center;'>{content.MANAGE_SELECTED_ASSISTANT_FILES}</div>", unsafe_allow_html=True)
     

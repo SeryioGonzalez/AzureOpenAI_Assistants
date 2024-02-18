@@ -136,11 +136,14 @@ class LLMHelper:
 
     def create_assistant_thread_run(self, thread, assistant_id, run_instructions):
         """Run Assistant"""
+        assistant_data  = self.get_assistant(assistant_id)
+        assistant_tools = self._tools_to_json(assistant_data.tools)
+        
         run = self.llm_client.beta.threads.runs.create(
             thread_id=thread.id,
             assistant_id=assistant_id,
             instructions=run_instructions,
-            tools=[{"type": "code_interpreter"}]
+            tools=assistant_tools
         )
 
         return run
@@ -186,6 +189,12 @@ class LLMHelper:
 
         return messages
 
+#INSTRUCTIONS
+    def update_assistant_instructions(self, assistant_id, updated_instructions):
+        self.llm_client.beta.assistants.update(assistant_id, 
+            instructions        = updated_instructions
+        )
+
 #FUNCTIONS
     def _tools_to_json(self, assistant_tools):
         tool_list = []
@@ -200,14 +209,46 @@ class LLMHelper:
             tool_list.append(this_tool)
         return tool_list
 
-    def update_assistant_functions(self, assistant_id, new_function_data):
+    def delete_assistant_function(self, assistant_id, function_name_to_delete):
         assistant_data  = self.get_assistant(assistant_id)
         assistant_tools = self._tools_to_json(assistant_data.tools)
+        updated_tools = [tool for tool in assistant_tools if 'function' in tool and tool['function']['name'] != function_name_to_delete]
+        self.observability_helper.log_message(f"Deleting function {function_name_to_delete} in assistant {assistant_id}", self.verbose)
+        self.update_assistant_tools(assistant_id, updated_tools)
+
+    def create_assistant_function(self, assistant_id, new_function_data):
+        assistant_data  = self.get_assistant(assistant_id)
+        assistant_tools = self._tools_to_json(assistant_data.tools)
+
         new_tool = {"type": "function", "function": json.loads(new_function_data)}
         assistant_tools.append(new_tool)
         
         self.observability_helper.log_message(f"Adding tool {new_tool['function']} to assistant {assistant_id}", self.verbose)
+        self.update_assistant_tools(assistant_id, assistant_tools)
+
+    def update_assistant_function(self, assistant_id, updated_function_json):
+        assistant_data  = self.get_assistant(assistant_id)
+        assistant_tools = self._tools_to_json(assistant_data.tools)
         
+        function_name_to_update = updated_function_json['name']
+        existing_tools = [tool for tool in assistant_tools if 'function' in tool and tool['function']['name'] != function_name_to_update]
+
+        updated_tool = {"type": "function", "function": updated_function_json}
+        existing_tools.append(updated_tool)
+        
+        self.observability_helper.log_message(f"Adding tool {updated_tool['function']} to assistant {assistant_id}", self.verbose)
+        self.update_assistant_tools(assistant_id, existing_tools)
+        
+    def update_assistant_code_interpreter_tool(self, assistant_id, is_code_interpreter_enabled):
+        assistant_data  = self.get_assistant(assistant_id)
+        assistant_tools = [tool for tool in self._tools_to_json(assistant_data.tools) if tool['type'] != "code_interpreter"]
+
+        if is_code_interpreter_enabled:
+            assistant_tools.append({"type": "code_interpreter"})
+
+        self.update_assistant_tools(assistant_id, assistant_tools)
+
+    def update_assistant_tools(self, assistant_id, assistant_tools):
         self.llm_client.beta.assistants.update(assistant_id, 
             tools        = assistant_tools
         )
