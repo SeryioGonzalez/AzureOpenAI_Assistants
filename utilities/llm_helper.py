@@ -212,6 +212,17 @@ class LLMHelper:
             tools        = assistant_tools
         )
 
+    def is_duplicated_function(self, assistant_id, new_function_body):
+        
+        this_assistant = self.get_assistant(assistant_id)
+        assistant_function_names = [tool_function.function.__dict__['name'] for tool_function in self.get_functions_from_assistant(this_assistant)]
+        new_function_name = json.loads(new_function_body)['name']
+
+        if new_function_name in assistant_function_names:
+            return True
+        else:
+            return False
+
 #FILES 
     def upload_file(self, file_byte_data):
         # Upload the file to OpenAI

@@ -76,9 +76,12 @@ if st.session_state['manager'].are_there_assistants():
     #New function submitted
     if (new_function_submit):
         if st.session_state['manager'].llm_helper.validate_function_json(new_function_body):
-            st.session_state['manager'].llm_helper.update_assistant_functions(selected_assistant_id, new_function_body)
-            st.session_state['manager'].observability_helper.log_message(f"New function added - refreshing", verbose=verbose)
-            st.rerun()
+            if st.session_state['manager'].llm_helper.is_duplicated_function(selected_assistant_id, new_function_body) is False:
+                st.session_state['manager'].llm_helper.update_assistant_functions(selected_assistant_id, new_function_body)
+                st.session_state['manager'].observability_helper.log_message(f"New function added - refreshing", verbose=verbose)
+                st.rerun()
+            else:
+               st.session_state['manager'].observability_helper.log_message(f"Duplicated function", verbose=verbose) 
         else:
             st.error(content.MANAGE_ASSISTANT_NEW_FUNCTION_NOT_VALID )
             st.session_state['manager'].observability_helper.log_message(f"Not a valid function", verbose=verbose)
