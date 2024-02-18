@@ -1,10 +1,14 @@
 import utilities.page_content as content
+from utilities.observability_helper import ObservabilityHelper
 from manager import Manager
 
 import datetime
 import json
 import pandas as pd
 import streamlit as st
+
+
+verbose = True
 
 
 def get_assistant_data(function_list):
@@ -33,6 +37,8 @@ if 'initialized' not in st.session_state:
     st.session_state['manager'] = manager
     st.session_state['initialized'] = True
 
+st.session_state['manager'].observability_helper.log_message("Configuring assistants", verbose=verbose)
+
 st.title(content.MANAGE_TITLE_TEXT )
 
 if st.session_state['manager'].are_there_assistants():
@@ -47,8 +53,6 @@ if st.session_state['manager'].are_there_assistants():
     selected_assistant_id = assistant_id_list[selected_assistant_index]
     selected_assistant = st.session_state['manager'].get_assistant(selected_assistant_id)
     
-    selected_assistant_functions = st.session_state['manager'].llm_helper.get_functions_from_assistant(selected_assistant)
-    selected_assistant_has_code_interpreter = st.session_state['manager'].llm_helper.assistant_has_code_interpreter(selected_assistant)
     selected_assistant_files = st.session_state['manager'].llm_helper.get_files_from_assistant(selected_assistant)
 
     #Selected Assistant info
@@ -63,18 +67,28 @@ if st.session_state['manager'].are_there_assistants():
 #Assistant Tools
     st.markdown(f"<div style='text-align: center;'>{content.MANAGE_SELECTED_ASSISTANT_TOOLS}</div>", unsafe_allow_html=True)
 #Assistant Functions
-    functions_data_list = get_assistant_data(selected_assistant_functions)
-
-    with st.form("my_form"):
+    #Adding a function
+    
+    with st.form("add_function_form"):
         with st.expander("Add Function"):
             new_function_body   = st.text_area("New function", key="manage_text_new_function" , height=400)
             new_function_submit = st.form_submit_button("Save function")
+    #New function submitted
     if (new_function_submit):
         if st.session_state['manager'].llm_helper.validate_function_json(new_function_body):
             st.session_state['manager'].llm_helper.update_assistant_functions(selected_assistant_id, new_function_body)
+            st.session_state['manager'].observability_helper.log_message(f"New function added - refreshing", verbose=verbose)
+            st.rerun()
         else:
             st.error(content.MANAGE_ASSISTANT_NEW_FUNCTION_NOT_VALID )
+            st.session_state['manager'].observability_helper.log_message(f"Not a valid function", verbose=verbose)
 
+    st.session_state['manager'].observability_helper.log_message(f"Listing functions", verbose=verbose)
+    #Listing function
+    selected_assistant_functions = st.session_state['manager'].llm_helper.get_functions_from_assistant(selected_assistant)
+    functions_data_list = get_assistant_data(selected_assistant_functions)
+    selected_assistant_has_code_interpreter = st.session_state['manager'].llm_helper.assistant_has_code_interpreter(selected_assistant)
+    
     st.write(content.MANAGE_SELECTED_ASSISTANT_FUNCTIONS)
     for function_data in functions_data_list:
         with st.expander(function_data['name']):

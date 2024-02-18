@@ -1,6 +1,6 @@
 
 class ObservabilityHelper:
-        
+    
     def log_completion(self, completion, user_sid, active_tool,  active_step):
         completion_usage  = completion['usage']
         prompt_tokens     = completion_usage['prompt_tokens']

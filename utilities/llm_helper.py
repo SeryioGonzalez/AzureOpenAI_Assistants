@@ -24,7 +24,7 @@ class LLMHelper:
             api_version    = self.env_helper.AZURE_OPENAI_API_VERSION
         )
         self.openai_deployment = self.env_helper.AZURE_OPENAI_MODEL_DEPLOYMENT_NAME
-        self.verbose = True
+        self.verbose = False
 
     def create_assistant(self, assistant_name : str, instructions : str, tools : list):
         assistant = self.llm_client.beta.assistants.create(
