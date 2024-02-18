@@ -14,7 +14,6 @@ if 'initialized' not in st.session_state:
     st.session_state['messages'] = []
     st.session_state['manager'].log(f"New session created with id {st.session_state['session_id']}")
 
-
 st.title(content.MAIN_TITLE_TEXT)
 
 if st.session_state['manager'].are_there_assistants():
