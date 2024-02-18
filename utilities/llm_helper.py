@@ -12,6 +12,7 @@ else:
 
 import json
 import io
+import openai
 
 class LLMHelper:
     """Class managing LLM interaction"""
@@ -24,9 +25,17 @@ class LLMHelper:
             api_version    = self.env_helper.AZURE_OPENAI_API_VERSION
         )
         self.openai_deployment = self.env_helper.AZURE_OPENAI_MODEL_DEPLOYMENT_NAME
-        self.verbose = False
+        self.verbose = True
 
-    def create_assistant(self, assistant_name : str, instructions : str, tools : list):
+    def is_duplicated_assistant(self, new_assistant_name):
+        existing_assistant_names = [assistant.name for assistant in self.get_assistants()]
+        
+        return new_assistant_name in existing_assistant_names
+
+    def create_assistant(self, new_assistant_name, new_assistant_instructions):
+        self._create_assistant(new_assistant_name, new_assistant_instructions, [])
+
+    def _create_assistant(self, assistant_name : str, instructions : str, tools : list):
         assistant = self.llm_client.beta.assistants.create(
             name=assistant_name,
             instructions=instructions,
@@ -50,9 +59,9 @@ class LLMHelper:
 
     def get_assistants(self):
         """List Assistants"""
-        assistant_file_list = self.llm_client.beta.assistants.list().data
+        assistant_list = self.llm_client.beta.assistants.list().data
 
-        return assistant_file_list
+        return assistant_list
 
     def get_assistant_files(self, assistant_id):
         assistant_list = self.llm_client.beta.assistants.files(assistant_id)
@@ -70,9 +79,13 @@ class LLMHelper:
     #TODO
     def modify_assistant(self, assistant_id, assistant):
         return None
-    #TODO
+    
     def delete_assistant(self, assistant_id):
-        return None
+        try:
+            self.observability_helper.log_message(f"Deleting assistant {assistant_id}", self.verbose)
+            self.llm_client.beta.assistants.delete(assistant_id)
+        except openai.NotFoundError:
+            self.observability_helper.log_message(f"Assistant {assistant_id} does not exist", self.verbose)
 
     #TODO
     def delete_assistant_file(self, assistant_id, file_id):

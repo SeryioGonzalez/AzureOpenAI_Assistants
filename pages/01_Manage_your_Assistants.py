@@ -59,6 +59,10 @@ def update_code_interpreter(assistant_id):
     st.session_state['manager'].observability_helper.log_message(f"For {assistant_id} code interpreter is {st.session_state['code_interpreter']}", verbose=verbose)
     st.session_state['manager'].llm_helper.update_assistant_code_interpreter_tool(assistant_id, st.session_state['code_interpreter'])
 
+def delete_assistant(assistant_id):
+    st.session_state['manager'].observability_helper.log_message(f"Deleting {assistant_id} ", verbose=verbose)
+    st.session_state['manager'].llm_helper.delete_assistant(assistant_id)   
+
 if 'initialized' not in st.session_state:
     manager = Manager()
     st.session_state['manager'] = manager
@@ -74,6 +78,27 @@ if st.session_state['manager'].are_there_assistants():
     assistant_id_list   = [ assistant[0] for assistant in assistant_id_name_list]
     assistant_name_list = [ assistant[1] for assistant in assistant_id_name_list]
     
+    with st.form("add_assistant_form"):
+        with st.expander(content.MANAGE_CREATE_ASSISTANT):
+            new_assistant_name         = st.text_input(content.MANAGE_CREATE_ASSISTANT_NAME, key="new_assistant_name")
+            new_assistant_instructions = st.text_area(content.MANAGE_CREATE_ASSISTANT_INSTRUCTIONS, key="new_assistant_instructions")
+            new_assistant_submit       = st.form_submit_button(content.MANAGE_CREATE_ASSISTANT_SUBMIT)
+
+        #New function submitted
+    if (new_assistant_submit):
+        if new_assistant_name != "" and new_assistant_instructions != "":
+            if st.session_state['manager'].llm_helper.is_duplicated_assistant(new_assistant_name) is False:
+                st.session_state['manager'].llm_helper.create_assistant(new_assistant_name, new_assistant_instructions)
+                st.session_state['manager'].observability_helper.log_message(f"New assistant {new_assistant_name} created - refreshing", verbose=verbose)
+                st.rerun()
+            else:
+               st.session_state['manager'].observability_helper.log_message(f"Duplicated assistant {new_assistant_name}", verbose=verbose) 
+               st.error(content.MANAGE_CREATE_ASSISTANT_DUPLICATED)
+            
+        else:
+            st.session_state['manager'].observability_helper.log_message(f"Name {new_assistant_name} or instructions {new_assistant_instructions} not specified", verbose=verbose) 
+            st.error(content.MANAGE_CREATE_ASSISTANT_NO_NAME_OR_INSTRUCTIONS)
+
     #Selected Assistant
     selected_assistant_name  = st.selectbox(content.MANAGE_ASSISTANT_SELECT_TEXT, assistant_name_list)
     selected_assistant_index = assistant_name_list.index(selected_assistant_name)
@@ -89,18 +114,18 @@ if st.session_state['manager'].are_there_assistants():
 
 #ASSISTANT DISPLAY
     st.write(content.MANAGE_SELECTED_ASSISTANT_ID + f": {selected_assistant_id}")
+    st.button(content.MANAGE_DELETE_ASSISTANT, on_click=delete_assistant, args=(selected_assistant_id,))
 #Assistant Instructions
     st.text_area(content.MANAGE_SELECTED_ASSISTANT_INSTRUCTIONS, assistant_instructions, key="updated_instructions")
-    st.button("Update Instructions", on_click=update_instructions, args=((selected_assistant_id,assistant_instructions),))
+    st.button(content.MANAGE_UPDATE_ASSISTANT_INSTRUCTIONS, on_click=update_instructions, args=((selected_assistant_id,assistant_instructions),))
 #Assistant Tools
     st.markdown(f"<div style='text-align: center;'>{content.MANAGE_SELECTED_ASSISTANT_TOOLS}</div>", unsafe_allow_html=True)
 #Assistant Functions
     #Adding a function
-    
     with st.form("add_function_form"):
-        with st.expander("Add Function"):
-            new_function_body   = st.text_area("New function", key="manage_text_new_function" , height=400)
-            new_function_submit = st.form_submit_button("Save function")
+        with st.expander(content.MANAGE_ADD_ASSISTANT_FUNCTION_EXPANDER):
+            new_function_body   = st.text_area(content.MANAGE_ADD_ASSISTANT_FUNCTION_BODY, key="manage_text_new_function" , height=400)
+            new_function_submit = st.form_submit_button(content.MANAGE_ADD_ASSISTANT_FUNCTION_BUTTON)
     #New function submitted
     if (new_function_submit):
         if st.session_state['manager'].llm_helper.validate_function_json(new_function_body):
@@ -123,10 +148,10 @@ if st.session_state['manager'].are_there_assistants():
     st.write(content.MANAGE_SELECTED_ASSISTANT_FUNCTIONS)
     for function_data in functions_data_list:
         with st.expander(function_data['name']):
-            function_body = st.text_area("Function definition", key="function_definition_" + function_data['name'] , value=function_data['definition'], height=400)
+            function_body = st.text_area(content.MANAGE_ASSISTANT_FUNCTION_BODY, key="function_definition_" + function_data['name'] , value=function_data['definition'], height=400)
             #Keys
-            st.button("Update", key="update_" + function_data['name'], on_click=update_function, args=(((selected_assistant_id, function_data['name']),) ))
-            st.button("Delete", key="delete_" + function_data['name'], on_click=delete_function, args=(((selected_assistant_id, function_data['name']),) ))
+            st.button(content.MANAGE_ASSISTANT_UPDATE_FUNCTION_BUTTON, key="update_" + function_data['name'], on_click=update_function, args=(((selected_assistant_id, function_data['name']),) ))
+            st.button(content.MANAGE_ASSISTANT_DELETE_FUNCTION_BUTTON, key="delete_" + function_data['name'], on_click=delete_function, args=(((selected_assistant_id, function_data['name']),) ))
 
 #OTHER TOOLS
     st.write(content.MANAGE_SELECTED_ASSISTANT_CAPABILITIES)
