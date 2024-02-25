@@ -6,13 +6,15 @@ import utilities.page_content as content
 from manager import Manager
 
 if 'initialized' not in st.session_state:
+    
+    verbose = True
     manager = Manager()
     st.session_state['manager'] = manager
     ctx = get_script_run_ctx()
     st.session_state['session_id'] = ctx.session_id
     st.session_state['initialized'] = True
     st.session_state['messages'] = []
-    st.session_state['manager'].log(f"New session created with id {st.session_state['session_id']}")
+    st.session_state['manager'].observability_helper.log_message(f"New session created with id {st.session_state['session_id']}", verbose=verbose)
 
 st.title(content.MAIN_TITLE_TEXT)
 
@@ -24,6 +26,12 @@ if st.session_state['manager'].are_there_assistants():
     assistant_name = st.selectbox(content.MAIN_ASSISTANT_SELECT_TEXT,  assistant_names)
     assistant_id = assistant_ids[assistant_names.index(assistant_name)]
 
+# Display chat messages from history on app rerun
+    if 'messages' in st.session_state:
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+
 #GET FILE INFO
     uploaded_file = st.file_uploader(content.MAIN_ASSISTANT_UPLOAD_DOCUMENT)
     if uploaded_file is not None:
@@ -33,12 +41,6 @@ if st.session_state['manager'].are_there_assistants():
             st.write(content.MAIN_FILE_UPLOAD_OK)
         else:
             st.write(content.MAIN_FILE_UPLOAD_KO)
-
-# Display chat messages from history on app rerun
-    if 'messages' in st.session_state:
-        for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
 
     if user_prompt := st.chat_input(content.MAIN_ASSISTANT_CHAT_WELCOME):
         st.session_state.messages.append({"role": "user", "content": user_prompt})

@@ -358,9 +358,5 @@ class LLMHelper:
 
 if __name__ == '__main__':
     llm_helper = LLMHelper()
-    #llm_helper.delete_all_files()
-    assistant = llm_helper.get_assistants()[0]
-    #assistant = Assistant()
-
-    print(assistant)
+    llm_helper.delete_all_files()
     

@@ -107,7 +107,7 @@ class Manager:
         self.uploaded_files[assistant_id].append(file_id)
         self.observability_helper.log_message(f"File {file_id} to assist id {assistant_id} OK", verbose)
 
-    def upload_file_to_assistant(self, assistant_name, uploaded_file, verbose=True):
+    def upload_file_to_assistant(self, assistant_id, uploaded_file, verbose=True):
         """Pushes file to assistants"""
         upload_success, file_id = self.upload_file(uploaded_file)
 
@@ -115,15 +115,16 @@ class Manager:
 
         if upload_success:
             self.observability_helper.log_message(f"Upload to AOAI OK. File id {file_id}", verbose)
-            assistant_id = self.get_assistant_field(assistant_name, "id")
             if self.llm_helper.create_assistant_file(assistant_id, file_id):
                 self.track_assistant_file(assistant_id, file_id)
                 self.observability_helper.log_message(f"Uploading file {file_id} to assistant id {assistant_id} OK", verbose)
                 upload_to_assistant = True
             else:
                 self.observability_helper.log_message(f"Uploading file {file_id} to assistant id {assistant_id} KO", verbose)
+                return None
         else:
             self.observability_helper.log_message(f"Uploading file {file_id} failed", verbose)
+            return None
 
 
         return upload_success & upload_to_assistant
