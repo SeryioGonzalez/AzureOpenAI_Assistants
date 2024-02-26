@@ -12,6 +12,6 @@ class ObservabilityHelper:
         self.log_message(message, verbose=True)
 
 
-    def log_message(self, message, verbose=False):
+    def log(self, message, verbose=False):
         if verbose:
             print(f"LOG - {message}")

@@ -13,12 +13,30 @@ class Manager:
         self.env_helper= EnvHelper()
         self.observability_helper = ObservabilityHelper()
         self.verbose = True
-        self.observability_helper.log_message("New Manager created", self.verbose)
+        self.observability_helper.log("New Manager created", self.verbose)
         self.uploaded_files = {}
         self.session_container = {}
+        self.message_list = {}
 
-    def log(self, log_message):
-        self.observability_helper.log_message(log_message, self.verbose)
+    def log(self, log):
+        self.observability_helper.log(log, self.verbose)
+
+    def get_message_list_length(self, assistant_id):
+        if assistant_id in self.message_list:
+            return len(self.message_list[assistant_id])
+        else:
+            return 0
+        
+    def get_message_list(self, assistant_id):
+        if assistant_id in self.message_list:
+            return self.message_list[assistant_id]
+        else:
+            return None
+        
+    def append_message(self, message, assistant_id):
+        if assistant_id not in self.message_list:
+            self.message_list[assistant_id] = []
+        self.message_list[assistant_id].append(message)
 
     def are_there_assistants(self):
         """Checks if are the assistants"""
@@ -29,7 +47,7 @@ class Manager:
         assistant_list = self.llm_helper.get_assistants()
         return assistant_list
 
-    def get_assistant_id_name_list(self):
+    def get_assistant_id_name_tuple_list(self):
         """Get Assistant id and names"""
         assistant_list = self.get_assistant_list()
         assistant_name_id_list = [(assistant.id, assistant.name) for assistant in assistant_list]
@@ -88,13 +106,13 @@ class Manager:
     def upload_file(self, uploaded_file, verbose=False):
         """Uploads a file"""
         bytes_data = uploaded_file.getvalue()
-        self.observability_helper.log_message(f"Uploading file {uploaded_file.name}", verbose)
+        self.observability_helper.log(f"Uploading file {uploaded_file.name}", verbose)
         upload_success, file_id = self.llm_helper.upload_file(bytes_data)
 
         if upload_success:
-            self.observability_helper.log_message(f"Uploading success. File id {file_id}", verbose)
+            self.observability_helper.log(f"Uploading success. File id {file_id}", verbose)
         else:
-            self.observability_helper.log_message(f"Uploading of file id {file_id} failed", verbose)
+            self.observability_helper.log(f"Uploading of file id {file_id} failed", verbose)
 
 
         return upload_success, file_id
@@ -105,7 +123,7 @@ class Manager:
             self.uploaded_files[assistant_id] = []
 
         self.uploaded_files[assistant_id].append(file_id)
-        self.observability_helper.log_message(f"File {file_id} to assist id {assistant_id} OK", verbose)
+        self.observability_helper.log(f"File {file_id} to assist id {assistant_id} OK", verbose)
 
     def upload_file_to_assistant(self, assistant_id, uploaded_file, verbose=True):
         """Pushes file to assistants"""
@@ -114,16 +132,16 @@ class Manager:
         upload_to_assistant = False
 
         if upload_success:
-            self.observability_helper.log_message(f"Upload to AOAI OK. File id {file_id}", verbose)
+            self.observability_helper.log(f"Upload to AOAI OK. File id {file_id}", verbose)
             if self.llm_helper.create_assistant_file(assistant_id, file_id):
                 self.track_assistant_file(assistant_id, file_id)
-                self.observability_helper.log_message(f"Uploading file {file_id} to assistant id {assistant_id} OK", verbose)
+                self.observability_helper.log(f"Uploading file {file_id} to assistant id {assistant_id} OK", verbose)
                 upload_to_assistant = True
             else:
-                self.observability_helper.log_message(f"Uploading file {file_id} to assistant id {assistant_id} KO", verbose)
+                self.observability_helper.log(f"Uploading file {file_id} to assistant id {assistant_id} KO", verbose)
                 return None
         else:
-            self.observability_helper.log_message(f"Uploading file {file_id} failed", verbose)
+            self.observability_helper.log(f"Uploading file {file_id} failed", verbose)
             return None
 
 

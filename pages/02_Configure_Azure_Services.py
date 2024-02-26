@@ -1,5 +1,6 @@
 from manager import Manager
 from utilities.env_helper   import EnvHelper
+from utilities.observability_helper import ObservabilityHelper
 import utilities.page_content as content
 
 import streamlit as st
@@ -28,9 +29,10 @@ def on_change_aoai_deployment():
    check_openai_config()
 
 if 'initialized' not in st.session_state:
-    manager = Manager()
-    st.session_state['manager'] = manager
+    st.session_state['manager'] = Manager()
+    st.session_state['logger'] = ObservabilityHelper()
     st.session_state['initialized'] = True
+
 
 st.header(content.VARIABLE_PAGE_HEADER)
 az_openai_service_endpoint   = st.text_input(content.VARIABLE_CONFIG_PAGE_OPENAI_ENDPOINT_FIELD  , st.session_state['manager'].env_helper.OPENAI_API_BASE,                    on_change=on_change_aoai_api_base,   key="aoai_api_base")
