@@ -1,5 +1,6 @@
 import utilities.page_content as content
 from utilities.observability_helper import ObservabilityHelper
+from utilities.openapi_helper import OpenAPIHelper
 from manager import Manager
 
 import datetime
@@ -7,9 +8,7 @@ import json
 import pandas as pd
 import streamlit as st
 
-
 verbose = True
-
 
 def get_assistant_data(function_list):
     def get_function_definition_dict(function_definition):
@@ -34,12 +33,12 @@ def get_file_data(file_list):
 def update_function(function_data):
     assistant_id, function_name = function_data
     key = "function_definition_" + function_name
-    new_function_data = st.session_state[key]
+    new_spec_data = st.session_state[key]
     
     try:
-        new_function_json = json.loads(new_function_data)
-        st.session_state['logger'].log(f"Updating function {new_function_json['name']}", verbose=verbose)
-        st.session_state['manager'].llm_helper.update_assistant_function(assistant_id, new_function_json)
+        new_spec_json = json.loads(new_spec_data)
+        st.session_state['logger'].log(f"Updating function {new_spec_json['name']}", verbose=verbose)
+        st.session_state['manager'].llm_helper.update_assistant_function(assistant_id, new_spec_json)
     except json.JSONDecodeError:
             st.session_state['logger'].log(f"Not a valid function JSON", verbose=verbose)
 
@@ -70,14 +69,17 @@ if 'initialized' not in st.session_state:
 
 st.session_state['logger'].log("Configuring assistants", verbose=verbose)
 
+#DISPLAY - TITLE
 st.title(content.MANAGE_TITLE_TEXT )
 
+#DISPLAY - ASSISTANT PANEL
 if st.session_state['manager'].are_there_assistants():
     #All Assitants
     assistant_id_name_list = st.session_state['manager'].get_assistant_id_name_tuple_list()
     assistant_id_list   = [ assistant[0] for assistant in assistant_id_name_list]
     assistant_name_list = [ assistant[1] for assistant in assistant_id_name_list]
     
+#DISPLAY - CREATE ASSISTANT FORM
     with st.form("add_assistant_form"):
         with st.expander(content.MANAGE_CREATE_ASSISTANT):
             new_assistant_name         = st.text_input(content.MANAGE_CREATE_ASSISTANT_NAME, key="new_assistant_name")
@@ -99,7 +101,7 @@ if st.session_state['manager'].are_there_assistants():
             st.session_state['logger'].log(f"Name {new_assistant_name} or instructions {new_assistant_instructions} not specified", verbose=verbose) 
             st.error(content.MANAGE_CREATE_ASSISTANT_NO_NAME_OR_INSTRUCTIONS)
 
-    #Selected Assistant
+#Selected Assistant
     selected_assistant_name  = st.selectbox(content.MANAGE_ASSISTANT_SELECT_TEXT, assistant_name_list)
     selected_assistant_index = assistant_name_list.index(selected_assistant_name)
     selected_assistant_id = assistant_id_list[selected_assistant_index]
@@ -112,31 +114,31 @@ if st.session_state['manager'].are_there_assistants():
     assistant_instructions = selected_assistant.instructions
     #assistant_conversation_starters = selected_assistant.metadata
 
-#ASSISTANT DISPLAY
+#DISPLAY - ASSISTANT DISPLAY
     st.write(content.MANAGE_SELECTED_ASSISTANT_ID + f": {selected_assistant_id}")
     st.button(content.MANAGE_DELETE_ASSISTANT, on_click=delete_assistant, args=(selected_assistant_id,))
-#Assistant Instructions
+#DISPLAY - ASSISTANT Instructions
     st.text_area(content.MANAGE_SELECTED_ASSISTANT_INSTRUCTIONS, assistant_instructions, key="updated_instructions")
     st.button(content.MANAGE_UPDATE_ASSISTANT_INSTRUCTIONS, on_click=update_instructions, args=((selected_assistant_id,assistant_instructions),))
-#Assistant Tools
+#DISPLAY - ASSISTANT TOOLS TITLE
     st.markdown(f"<div style='text-align: center;'>{content.MANAGE_SELECTED_ASSISTANT_TOOLS}</div>", unsafe_allow_html=True)
-#Assistant Functions
+#DISPLAY - ASSISTANT Functions
     #Adding a function
-    with st.form("add_function_form"):
-        with st.expander(content.MANAGE_ADD_ASSISTANT_FUNCTION_EXPANDER):
-            new_function_body   = st.text_area(content.MANAGE_ADD_ASSISTANT_FUNCTION_BODY, key="manage_text_new_function" , height=400)
-            new_function_submit = st.form_submit_button(content.MANAGE_ADD_ASSISTANT_FUNCTION_BUTTON)
+    with st.form("add_action_form"):
+        with st.expander(content.MANAGE_ASSISTANT_ACTION_ADD_EXPANDER):
+            new_spec_body   = st.text_area(content.MANAGE_ASSISTANT_ACTION_ADD_BODY, key="manage_text_new_spec" , height=400)
+            new_spec_submit = st.form_submit_button(content.MANAGE_ASSISTANT_ACTION_ADD_BUTTON)
     #New function submitted
-    if (new_function_submit):
-        if st.session_state['manager'].llm_helper.validate_function_json(new_function_body):
-            if st.session_state['manager'].llm_helper.is_duplicated_function(selected_assistant_id, new_function_body) is False:
-                st.session_state['manager'].llm_helper.create_assistant_function(selected_assistant_id, new_function_body)
+    if (new_spec_submit):
+        if OpenAPIHelper.validate_spec_json(new_spec_body):
+            openai_functions = OpenAPIHelper.extract_openai_functions_from_spec(new_spec_body)
+            for openai_function in openai_functions:
+                st.session_state['manager'].llm_helper.create_assistant_function(selected_assistant_id, openai_function)
                 st.session_state['logger'].log(f"New function added - refreshing", verbose=verbose)
-                st.rerun()
-            else:
-               st.session_state['logger'].log(f"Duplicated function", verbose=verbose) 
+            st.rerun()
+
         else:
-            st.error(content.MANAGE_ASSISTANT_NEW_FUNCTION_NOT_VALID )
+            st.error(content.MANAGE_ASSISTANT_new_spec_NOT_VALID )
             st.session_state['logger'].log(f"Not a valid function", verbose=verbose)
 
     st.session_state['logger'].log(f"Listing functions", verbose=verbose)
@@ -148,15 +150,15 @@ if st.session_state['manager'].are_there_assistants():
     st.write(content.MANAGE_SELECTED_ASSISTANT_FUNCTIONS)
     for function_data in functions_data_list:
         with st.expander(function_data['name']):
-            function_body = st.text_area(content.MANAGE_ASSISTANT_FUNCTION_BODY, key="function_definition_" + function_data['name'] , value=function_data['definition'], height=400)
+            function_body = st.text_area(content.MANAGE_ASSISTANT_ACTION_BODY, key="function_definition_" + function_data['name'] , value=function_data['definition'], height=400)
             #Keys
-            st.button(content.MANAGE_ASSISTANT_UPDATE_FUNCTION_BUTTON, key="update_" + function_data['name'], on_click=update_function, args=(((selected_assistant_id, function_data['name']),) ))
-            st.button(content.MANAGE_ASSISTANT_DELETE_FUNCTION_BUTTON, key="delete_" + function_data['name'], on_click=delete_function, args=(((selected_assistant_id, function_data['name']),) ))
+            st.button(content.MANAGE_ASSISTANT_ACTION_UPDATE_BUTTON, key="update_" + function_data['name'], on_click=update_function, args=(((selected_assistant_id, function_data['name']),) ))
+            st.button(content.MANAGE_ASSISTANT_ACTION_DELETE_BUTTON, key="delete_" + function_data['name'], on_click=delete_function, args=(((selected_assistant_id, function_data['name']),) ))
 
-#OTHER TOOLS
+#DISPLAY - ASSISTANT OTHER TOOLS
     st.write(content.MANAGE_SELECTED_ASSISTANT_CAPABILITIES)
     st.toggle(content.MANAGE_SELECTED_ASSISTANT_CAPABILITIES_CODE_INTERPRETER, on_change=update_code_interpreter, key="code_interpreter", args=(selected_assistant_id,),  value=selected_assistant_has_code_interpreter)
-#Assistant files
+#DISPLAY - ASSISTANT files
     st.markdown(f"<div style='text-align: center;'>{content.MANAGE_SELECTED_ASSISTANT_FILES}</div>", unsafe_allow_html=True)
     
     if len(selected_assistant_files) > 0:

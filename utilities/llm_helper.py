@@ -54,7 +54,7 @@ class LLMHelper:
         if  file_upload_to_assistant_response.id is not None:
             return True
         else: 
-            self.observability_helper.log_message(f"Uploading file to assistant failed", self.verbose)
+            self.observability_helper.log(f"Uploading file to assistant failed", self.verbose)
             return False
 
     def get_assistants(self):
@@ -82,10 +82,10 @@ class LLMHelper:
     
     def delete_assistant(self, assistant_id):
         try:
-            self.observability_helper.log_message(f"Deleting assistant {assistant_id}", self.verbose)
+            self.observability_helper.log(f"Deleting assistant {assistant_id}", self.verbose)
             self.llm_client.beta.assistants.delete(assistant_id)
         except openai.NotFoundError:
-            self.observability_helper.log_message(f"Assistant {assistant_id} does not exist", self.verbose)
+            self.observability_helper.log(f"Assistant {assistant_id} does not exist", self.verbose)
 
     #TODO
     def delete_assistant_file(self, assistant_id, file_id):
@@ -112,7 +112,7 @@ class LLMHelper:
     def add_message_to_assistant_thread(self, thread, message_role, message_content, file_ids):
         """Add message to Assistant thread"""
 
-        self.observability_helper.log_message(f"Creating message with content {message_content} and role {message_role} to thread {thread.id} with file ids:  {file_ids}", self.verbose)
+        self.observability_helper.log(f"Creating message with content {message_content} and role {message_role} to thread {thread.id} with file ids:  {file_ids}", self.verbose)
 
 
         self.llm_client.beta.threads.messages.create(
@@ -217,7 +217,7 @@ class LLMHelper:
             elif assistant_tool.type == "code_interpreter":
                 this_tool = {"type": "code_interpreter"}
             else:
-               self.observability_helper.log_message(f"ERROR - NOT CONSIDERED TOOL TYPE {assistant_tool.type}", self.verbose) 
+               self.observability_helper.log(f"ERROR - NOT CONSIDERED TOOL TYPE {assistant_tool.type}", self.verbose) 
             
             tool_list.append(this_tool)
         return tool_list
@@ -226,18 +226,21 @@ class LLMHelper:
         assistant_data  = self.get_assistant(assistant_id)
         assistant_tools = self._tools_to_json(assistant_data.tools)
         updated_tools = [tool for tool in assistant_tools if 'function' in tool and tool['function']['name'] != function_name_to_delete]
-        self.observability_helper.log_message(f"Deleting function {function_name_to_delete} in assistant {assistant_id}", self.verbose)
+        self.observability_helper.log(f"Deleting function {function_name_to_delete} in assistant {assistant_id}", self.verbose)
         self.update_assistant_tools(assistant_id, updated_tools)
 
     def create_assistant_function(self, assistant_id, new_function_data):
         assistant_data  = self.get_assistant(assistant_id)
-        assistant_tools = self._tools_to_json(assistant_data.tools)
+        existing_assistant_tools = self._tools_to_json(assistant_data.tools)
 
-        new_tool = {"type": "function", "function": json.loads(new_function_data)}
-        assistant_tools.append(new_tool)
+        #Excluded existing fuction with same name
+        existing_assistant_tools = [tool for tool in existing_assistant_tools if 'function' in tool and tool['function']['name'] != new_function_data['name'] ]
         
-        self.observability_helper.log_message(f"Adding tool {new_tool['function']} to assistant {assistant_id}", self.verbose)
-        self.update_assistant_tools(assistant_id, assistant_tools)
+        new_tool = {"type": "function", "function": new_function_data}
+        existing_assistant_tools.append(new_tool)
+        
+        self.observability_helper.log(f"Adding a tool {new_tool['function']} to assistant {assistant_id}", self.verbose)
+        self.update_assistant_tools(assistant_id, existing_assistant_tools)
 
     def update_assistant_function(self, assistant_id, updated_function_json):
         assistant_data  = self.get_assistant(assistant_id)
@@ -249,7 +252,9 @@ class LLMHelper:
         updated_tool = {"type": "function", "function": updated_function_json}
         existing_tools.append(updated_tool)
         
-        self.observability_helper.log_message(f"Adding tool {updated_tool['function']} to assistant {assistant_id}", self.verbose)
+        existing_tool_names = [tool['function']['name'] for tool in existing_tools]
+
+        self.observability_helper.log(f"Adding a tool {updated_tool['function']} to assistant {assistant_id} with tools {existing_tool_names}", self.verbose)
         self.update_assistant_tools(assistant_id, existing_tools)
         
     def update_assistant_code_interpreter_tool(self, assistant_id, is_code_interpreter_enabled):
@@ -287,7 +292,7 @@ class LLMHelper:
         if  file_upload_response.status == 'processed':
             return True, file_upload_response.id
         else: 
-            self.observability_helper.log_message(f"Uploading failed with status {file_upload_response.status}", self.verbose)
+            self.observability_helper.log(f"Uploading failed with status {file_upload_response.status}", self.verbose)
             return False, None
 
     def delete_all_files(self):
