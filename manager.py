@@ -1,9 +1,11 @@
 """Manages Assistant flows"""
+import json
 import time
 
 from utilities.env_helper           import EnvHelper
 from utilities.llm_helper           import LLMHelper
 from utilities.observability_helper import ObservabilityHelper
+from utilities.openapi_helper       import OpenAPIHelper
 
 class Manager:
     """App manager class"""
@@ -17,6 +19,9 @@ class Manager:
         self.uploaded_files = {}
         self.session_container = {}
         self.message_list = {}
+
+        with open('ikea_openapi.json', 'r') as file:
+            self.openapi_spec = json.load(file)
 
     def log(self, log):
         self.observability_helper.log(log, self.verbose)
@@ -91,9 +96,18 @@ class Manager:
         self.llm_helper.add_message_to_assistant_thread(thread, "user", prompt, assistant_file_ids)
 
         run = self.llm_helper.create_assistant_thread_run(thread, assistant_id, "Be good")
-
+        
         while run.status != "completed":
-            time.sleep(1)
+            self.observability_helper.log(f"Run status is {run.status}", self.verbose)
+            if run.status == 'requires_action':
+                if run.required_action.type == 'submit_tool_outputs':
+                    function_name = run.required_action.submit_tool_outputs.tool_calls[0].function.name
+                    function_args = run.required_action.submit_tool_outputs.tool_calls[0].function.arguments
+                    self.observability_helper.log(f"Required calling function {function_name} with args {function_args}")
+                    function_result = OpenAPIHelper.call_function(function_name, function_args, self.openapi_spec)
+                    self.observability_helper.log(f"Function result is {function_result}", self.verbose)
+            time.sleep(0.5)
+
             run = self.llm_helper.get_assistant_thread_run(thread.id, run.id)
 
         raw_messages = self.llm_helper.get_assistant_thread_messages(thread.id)
@@ -101,7 +115,6 @@ class Manager:
         message_info = [{'message_value':message.content[0].text.value, 'message_role': message.role} for message in raw_messages.data ]
 
         return message_info
-        return messages.data[0].content[0].text.value
 
     def upload_file(self, uploaded_file, verbose=False):
         """Uploads a file"""

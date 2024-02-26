@@ -6,15 +6,15 @@ import utilities.page_content as content
 from utilities.observability_helper import ObservabilityHelper
 from manager import Manager
 
-verbose = True
-    
+VERBOSE = True
+
 if 'initialized' not in st.session_state:
     st.session_state['manager'] = Manager()
     ctx = get_script_run_ctx()
     st.session_state['session_id'] = ctx.session_id
     st.session_state['initialized'] = True
     st.session_state['logger'] = ObservabilityHelper()
-    st.session_state['logger'].log(f"New session created with id {st.session_state['session_id']}", verbose=verbose)
+    st.session_state['logger'].log(f"New session created with id {st.session_state['session_id']}", verbose=VERBOSE)
 
 st.title(content.MAIN_TITLE_TEXT)
 
@@ -50,6 +50,7 @@ if st.session_state['manager'].are_there_assistants():
 
         #THREAD COMPLETION
         thread_run_messages = st.session_state['manager'].run_thread(st.session_state['session_id'], user_prompt, assistant_id)
+        st.session_state['logger'].log(f"Thread messages {thread_run_messages}", verbose=VERBOSE)
         st.session_state['manager'].append_message({"role": "assistant", "content": thread_run_messages[0]['message_value']}, assistant_id)
         st.chat_message("assistant").markdown(thread_run_messages[0]['message_value'])
 

@@ -114,7 +114,6 @@ class LLMHelper:
 
         self.observability_helper.log(f"Creating message with content {message_content} and role {message_role} to thread {thread.id} with file ids:  {file_ids}", self.verbose)
 
-
         self.llm_client.beta.threads.messages.create(
             thread_id=thread.id,
             role=message_role,

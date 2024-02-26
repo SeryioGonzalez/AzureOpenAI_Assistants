@@ -12,12 +12,12 @@ class OpenAPIHelper:
     """
 ################################ INITIALIZATION METHODS ########################################
     """
-    def __init__(, openapi_spec_file):
-        .openapi_json_spec_file = openapi_spec_file
-        .openapi_spec = ._extract_spec()
+    def __init__(self, openapi_spec_file):
+        self.openapi_json_spec_file = openapi_spec_file
+        self.openapi_spec = self._extract_spec()
 
-        .server_list = [server['url'][0:-1] for server in .openapi_spec['servers']]
-        .function_dict = ._create_function_dict()
+        self.server_list = [server['url'][0:-1] for server in self.openapi_spec['servers']]
+        self.function_dict = self._create_function_dict()
     """
     @staticmethod
     def _extract_spec(openapi_json_spec_file):
@@ -84,7 +84,7 @@ class OpenAPIHelper:
 
     @staticmethod
     def _construct_call_fqdns(function_data, function_args, server_list):
-        params = function_data['parameters']
+        params = function_data.get('parameters', None)
         path   = function_data['path']
 
         if params is not None:
@@ -105,7 +105,7 @@ class OpenAPIHelper:
             path = path.replace("{", "")
             path = path.replace("}", "")
 
-        fqdns = [server + path for server in server_list]
+        fqdns = [server['url'][0:-1] + path for server in server_list]
 
         return fqdns
 
@@ -134,17 +134,18 @@ class OpenAPIHelper:
         return openai_functions
 
     @staticmethod
-    def call_function(function_name, function_args):
+    def call_function(function_name, function_args, openapi_spec):
         """
             Executes a function
         """
-        function_data   = OpenAPIHelper.function_dict[function_name]
+        function_dict   = OpenAPIHelper._create_function_dict(openapi_spec)
+        function_data   = function_dict[function_name]
         function_method = function_data['method']
 
         function_args_dict = json.loads(function_args)
 
         #GET FQDNs We avoid calling always the first element
-        call_fqdns = OpenAPIHelper._construct_call_fqdns(function_data, function_args_dict)
+        call_fqdns = OpenAPIHelper._construct_call_fqdns(function_data, function_args_dict, openapi_spec['servers'])
         random.shuffle(call_fqdns)
 
         #Call FQDNS until proper response
