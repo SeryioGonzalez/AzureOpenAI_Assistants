@@ -35,7 +35,7 @@ if st.session_state['manager'].are_there_assistants():
 # DISPLAY - GET FILE INFO
     uploaded_file = st.file_uploader(content.MAIN_ASSISTANT_UPLOAD_DOCUMENT)
     if uploaded_file is not None:
-        upload_success = st.session_state['manager'].upload_file_to_assistant(assistant_id, uploaded_file)
+        upload_success, file_id = st.session_state['manager'].upload_file_for_assistant_messages(assistant_id, uploaded_file)
 
         if upload_success:
             st.write(content.MAIN_FILE_UPLOAD_OK)

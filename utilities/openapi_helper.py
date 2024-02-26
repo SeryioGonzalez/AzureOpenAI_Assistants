@@ -1,6 +1,7 @@
 """
 This module is useful for OpenAPI interoworking
 """
+from utilities.observability_helper import ObservabilityHelper
 
 import json
 import random
@@ -19,6 +20,8 @@ class OpenAPIHelper:
         self.server_list = [server['url'][0:-1] for server in self.openapi_spec['servers']]
         self.function_dict = self._create_function_dict()
     """
+    VERBOSE = False
+
     @staticmethod
     def _extract_spec(openapi_json_spec_file):
         with open(openapi_json_spec_file, 'r', encoding="utf-8") as json_file:
@@ -98,7 +101,7 @@ class OpenAPIHelper:
                 path = path.replace(param_name, param_value)
 
             if len(params_in_query) > 0:
-                query_params = [f"{param_in_query['name']}={str(function_args[param_in_query])}" for param_in_query in params_in_query]
+                query_params = [f"{param_in_query['name']}={str(function_args[param_in_query['name']])}" for param_in_query in params_in_query]
                 query_params_string = "&".join(query_params)
                 path += "?" + query_params_string
 
@@ -156,7 +159,7 @@ class OpenAPIHelper:
                 elif function_method == 'post':
                     req = requests.post(call_fqdn, json=function_args_dict)
                 else:
-                    print(f"ERROR - Method {function_method} not implemented")
+                    ObservabilityHelper.log(f"ERROR - Method {function_method} not implemented", OpenAPIHelper.VERBOSE)
 
                 if req.status_code == 200:
                     response = req.text
@@ -164,7 +167,7 @@ class OpenAPIHelper:
             except Exception:
                 continue
 
-        print("ERROR")
+        ObservabilityHelper.log("ERROR - No successful response from functions", OpenAPIHelper.VERBOSE)
 
-        return None
+        return "No response from function call"
     

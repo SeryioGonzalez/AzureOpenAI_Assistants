@@ -188,9 +188,12 @@ class LLMHelper:
     def modify_assistant_thread_run(self, thread_id, run_id, metadata):
         return None
 
-    #TODO
-    def submit_tool_outputs_to_assistant_thread_run(self, thread_id, run_id, metadata):
-        return None
+    def submit_tool_outputs_to_assistant_thread_run(self, thread_id, run_id, tool_output_list):
+        run = self.llm_client.beta.threads.runs.submit_tool_outputs(
+            thread_id=thread_id,
+            run_id=run_id,
+            tool_outputs=tool_output_list
+            )
 
     #TODO
     def cancel_assistant_thread_runs(self, thread_id, run_id):

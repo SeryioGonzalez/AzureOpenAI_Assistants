@@ -16,9 +16,10 @@ class Manager:
         self.observability_helper = ObservabilityHelper()
         self.verbose = True
         self.observability_helper.log("New Manager created", self.verbose)
-        self.uploaded_files = {}
         self.session_container = {}
         self.message_list = {}
+        self.uploaded_files = {}
+        self.api_response_sleep_time = 1
 
         with open('ikea_openapi.json', 'r') as file:
             self.openapi_spec = json.load(file)
@@ -93,6 +94,7 @@ class Manager:
         thread = self.session_container[user_session_id][assistant_id]
 
         assistant_file_ids = self.uploaded_files.get(assistant_id, [])
+
         self.llm_helper.add_message_to_assistant_thread(thread, "user", prompt, assistant_file_ids)
 
         run = self.llm_helper.create_assistant_thread_run(thread, assistant_id, "Be good")
@@ -101,12 +103,25 @@ class Manager:
             self.observability_helper.log(f"Run status is {run.status}", self.verbose)
             if run.status == 'requires_action':
                 if run.required_action.type == 'submit_tool_outputs':
-                    function_name = run.required_action.submit_tool_outputs.tool_calls[0].function.name
-                    function_args = run.required_action.submit_tool_outputs.tool_calls[0].function.arguments
-                    self.observability_helper.log(f"Required calling function {function_name} with args {function_args}")
-                    function_result = OpenAPIHelper.call_function(function_name, function_args, self.openapi_spec)
-                    self.observability_helper.log(f"Function result is {function_result}", self.verbose)
-            time.sleep(0.5)
+                    tool_output_list = []
+                    for tool_call in run.required_action.submit_tool_outputs.tool_calls:
+                        tool_id       = tool_call.id
+                        function_name = tool_call.function.name
+                        function_args = tool_call.function.arguments
+                        self.observability_helper.log(f"Required calling function {function_name} with args {function_args}")
+                        function_call_result = OpenAPIHelper.call_function(function_name, function_args, self.openapi_spec)
+                        self.observability_helper.log(f"Function result is {function_call_result}", self.verbose)
+
+                        tool_call_output = {
+                            "tool_call_id": tool_id,
+                            "output": function_call_result
+                        }
+
+                        tool_output_list.append(tool_call_output)
+
+                    self.llm_helper.submit_tool_outputs_to_assistant_thread_run(thread.id, run.id, tool_output_list)
+
+            time.sleep(self.api_response_sleep_time)
 
             run = self.llm_helper.get_assistant_thread_run(thread.id, run.id)
 
@@ -130,13 +145,13 @@ class Manager:
 
         return upload_success, file_id
 
-    def track_assistant_file(self, assistant_id, file_id, verbose=True):
+    def track_assistant_file_for_messages(self, assistant_id, file_id, verbose=True):
         """Adds assistant to file"""
         if assistant_id not in self.uploaded_files:
             self.uploaded_files[assistant_id] = []
 
         self.uploaded_files[assistant_id].append(file_id)
-        self.observability_helper.log(f"File {file_id} to assist id {assistant_id} OK", verbose)
+        self.observability_helper.log(f"File {file_id} to assistant id {assistant_id} OK", verbose)
 
     def upload_file_to_assistant(self, assistant_id, uploaded_file, verbose=True):
         """Pushes file to assistants"""
@@ -147,7 +162,7 @@ class Manager:
         if upload_success:
             self.observability_helper.log(f"Upload to AOAI OK. File id {file_id}", verbose)
             if self.llm_helper.create_assistant_file(assistant_id, file_id):
-                self.track_assistant_file(assistant_id, file_id)
+                #self.track_assistant_file(assistant_id, file_id)
                 self.observability_helper.log(f"Uploading file {file_id} to assistant id {assistant_id} OK", verbose)
                 upload_to_assistant = True
             else:
@@ -158,4 +173,17 @@ class Manager:
             return None
 
 
-        return upload_success & upload_to_assistant
+        return upload_to_assistant, file_id
+
+    def upload_file_for_assistant_messages(self, assistant_id, uploaded_file, verbose=True):
+        """Pushes file to assistants"""
+        upload_success, file_id = self.upload_file(uploaded_file)
+        
+        if upload_success:
+            self.observability_helper.log(f"Upload to AOAI OK. File id {file_id}", verbose)
+            self.track_assistant_file_for_messages(assistant_id, file_id)
+            
+        else:
+            self.observability_helper.log(f"Uploading file {file_id} failed", verbose)
+            
+        return upload_success, file_id 
