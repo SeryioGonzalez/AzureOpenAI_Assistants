@@ -7,19 +7,12 @@ import json
 import random
 import requests
 
+
 class OpenAPIHelper:
     """
     This class abstract OpenAPI operations
     """
-################################ INITIALIZATION METHODS ########################################
-    """
-    def __init__(self, openapi_spec_file):
-        self.openapi_json_spec_file = openapi_spec_file
-        self.openapi_spec = self._extract_spec()
-
-        self.server_list = [server['url'][0:-1] for server in self.openapi_spec['servers']]
-        self.function_dict = self._create_function_dict()
-    """
+# INITIALIZATION METHODS ########################################
     VERBOSE = False
 
     @staticmethod
@@ -44,7 +37,7 @@ class OpenAPIHelper:
 
         return function_dict
 
-################################ PRIVATE METHODS ########################################
+# PRIVATE METHODS ########################################
     @staticmethod
     def _parse_path(json_path):
         dictionary_output = {}
@@ -57,26 +50,26 @@ class OpenAPIHelper:
         dictionary_output['parameters']['required'] = []
 
         if 'parameters' in json_path:
-            formatted_parameters = [ {
-                'name':parameter['name'],
+            formatted_parameters = [{
+                'name': parameter['name'],
                 'description': parameter['description'],
                 'type': parameter['schema']['type']
-                } for parameter in json_path['parameters']  ]
+                } for parameter in json_path['parameters']]
 
-            resulting_param_dict = {d['name']: {'description': d['description'], 'type':d['type']} for d in formatted_parameters}
+            resulting_param_dict = {d['name']: {'description': d['description'], 'type': d['type']} for d in formatted_parameters}
             dictionary_output['parameters']['properties'] = resulting_param_dict
 
-            required_parameters = [ parameter['name'] for parameter in json_path['parameters'] if parameter['required'] == True]
+            required_parameters = [parameter['name'] for parameter in json_path['parameters'] if parameter['required'] is True]
             dictionary_output['parameters']['required'] = required_parameters
 
         return dictionary_output
-    
+
     @staticmethod
     def _extract_openai_functions(openapi_spec):
         openai_functions = []
         for path in openapi_spec['paths']:
-            #POST METHODS REQUIRE A DIFFERENT STRUCTURE. TBD
-            #supported_http_methods = ['get', 'post', 'put', 'delete', 'patch']
+            # POST METHODS REQUIRE A DIFFERENT STRUCTURE. TBD
+            # supported_http_methods = ['get', 'post', 'put', 'delete', 'patch']
             supported_http_methods = ['get']
             for http_method in supported_http_methods:
                 if http_method in openapi_spec['paths'][path]:
@@ -91,8 +84,8 @@ class OpenAPIHelper:
         path   = function_data['path']
 
         if params is not None:
-            params_in_path  = [ param for param in params if param['in'] == "path"]
-            params_in_query = [ param for param in params if param['in'] == "query"]
+            params_in_path  = [param for param in params if param['in'] == "path"]
+            params_in_query = [param for param in params if param['in'] == "query"]
 
             for param_in_path in params_in_path:
                 param_name  = param_in_path['name']
@@ -112,14 +105,12 @@ class OpenAPIHelper:
 
         return fqdns
 
-################################ PUBLIC METHODS ########################################
+# PUBLIC METHODS ########################################
     @staticmethod
     def validate_spec_json(new_spec_body):
         try:
-            new_spec_json = json.loads(new_spec_body) 
-            if ('info'   in new_spec_json and
-               'paths'   in new_spec_json and 
-               'servers' in new_spec_json):
+            new_spec_json = json.loads(new_spec_body)
+            if ('info' in new_spec_json and 'paths' in new_spec_json and 'servers' in new_spec_json):
                 return True
             else:
                 return False
@@ -131,7 +122,7 @@ class OpenAPIHelper:
         """
             Get a list of functions that can be passed as tools to OpenAI from an OpenAPI Spec
         """
-        openapi_spec_json = json.loads(openapi_spec) 
+        openapi_spec_json = json.loads(openapi_spec)
         openai_functions = OpenAPIHelper._extract_openai_functions(openapi_spec_json)
 
         return openai_functions
@@ -147,11 +138,11 @@ class OpenAPIHelper:
 
         function_args_dict = json.loads(function_args)
 
-        #GET FQDNs We avoid calling always the first element
+        # GET FQDNs We avoid calling always the first element
         call_fqdns = OpenAPIHelper._construct_call_fqdns(function_data, function_args_dict, openapi_spec['servers'])
         random.shuffle(call_fqdns)
 
-        #Call FQDNS until proper response
+        # Call FQDNS until proper response
         for call_fqdn in call_fqdns:
             try:
                 if function_method == 'get':
@@ -170,4 +161,3 @@ class OpenAPIHelper:
         ObservabilityHelper.log("ERROR - No successful response from functions", OpenAPIHelper.VERBOSE)
 
         return "No response from function call"
-    

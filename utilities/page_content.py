@@ -1,4 +1,4 @@
-#MAIN PAGE
+# MAIN PAGE
 MAIN_TITLE_TEXT = "Azure OpenAI Assistants"
 MAIN_ASSISTANT_CHAT_WELCOME = "How can I help you?"
 MAIN_ASSISTANT_SELECT_TEXT = "Select Your Assistant"
@@ -7,7 +7,7 @@ MAIN_FILE_UPLOAD_KO = "File upload failed!"
 MAIN_FILE_UPLOAD_OK = "File uploaded to OpenAI successfully!"
 MAIN_NO_ASSISTANT_TEXT = "No Assistants created. Create your first Assistant"
 
-#ASSISTANT MANAGEMENT PAGE
+# ASSISTANT MANAGEMENT PAGE
 MANAGE_TITLE_TEXT = "Manage your Azure OpenAI Assistants"
 MANAGE_ASSISTANT_ACTION_ADD_EXPANDER = "Add Action"
 MANAGE_ASSISTANT_ACTION_ADD_BODY = "OpenAPI Spec"
@@ -24,7 +24,7 @@ MANAGE_SELECTED_ASSISTANT_ID = "Assistant Id"
 MANAGE_SELECTED_ASSISTANT_INSTRUCTIONS = "Assistant Instructions"
 MANAGE_SELECTED_ASSISTANT_TOOLS = "Assistant tools"
 
-MANAGE_ASSISTANT_NEW_FUNCTION_NOT_VALID = "Not a valid function definition"
+MANAGE_ASSISTANT_NEW_SPEC_NOT_VALID = "Not a valid spec definition"
 MANAGE_ASSISTANT_SELECT_TEXT = "Select Your Assistant"
 MANAGE_CREATE_ASSISTANT = "Create new Assistant"
 MANAGE_CREATE_ASSISTANT_DUPLICATED = "Assistant already exists"
@@ -36,7 +36,7 @@ MANAGE_DELETE_ASSISTANT = "Delete Assistant"
 MANAGE_NO_FILE_MESSAGE = "No files in assistant"
 MANAGE_UPDATE_ASSISTANT_INSTRUCTIONS = "Update Instructions"
 
-#VARIABLE CONFIGURATION PAGE
+# VARIABLE CONFIGURATION PAGE
 VARIABLE_PAGE_HEADER = "Azure service configuration"
 VARIABLE_CONFIG_PAGE_OPENAI_DEPLOYMENT_FIELD = "Azure OpenAI Deployment Name"
 VARIABLE_CONFIG_PAGE_OPENAI_ENDPOINT_FIELD   = "Azure OpenAI Service Endpoint (https://YOUR_AOAI_RESOURCE_NAME.openai.azure.com/)"

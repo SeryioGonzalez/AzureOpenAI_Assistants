@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 import os
 
+
 class EnvHelper:
     def __init__(self, **kwargs) -> None:
         load_dotenv()
@@ -11,24 +12,16 @@ class EnvHelper:
         self.AZURE_OPENAI_KEY = os.getenv('AZURE_OPENAI_KEY', '')
         self.AZURE_OPENAI_MODEL_DEPLOYMENT_NAME = os.getenv('AZURE_OPENAI_MODEL_DEPLOYMENT_NAME', '')
         self.AZURE_OPENAI_API_VERSION = os.getenv('AZURE_OPENAI_API_VERSION')
-    
+
     # Set env for OpenAI SDK
         self.OPENAI_API_BASE = f"https://{os.getenv('AZURE_OPENAI_RESOURCE')}.openai.azure.com/"
         self.OPENAI_API_KEY = self.AZURE_OPENAI_KEY
         self.OPENAI_API_VERSION = self.AZURE_OPENAI_API_VERSION
-        
+
         os.environ["OPENAI_API_TYPE"] = "azure"
         os.environ["OPENAI_API_BASE"] = f"https://{os.getenv('AZURE_OPENAI_RESOURCE')}.openai.azure.com/"
         os.environ["OPENAI_API_KEY"] = self.AZURE_OPENAI_KEY
         os.environ["OPENAI_API_VERSION"] = self.AZURE_OPENAI_API_VERSION
-
-    
-    @staticmethod
-    def check_env():
-        for attr, value in EnvHelper().__dict__.items():
-            if value == '':
-                logging.warning(f"{attr} is not set in the environment variables.")
-
 
 
 '''
