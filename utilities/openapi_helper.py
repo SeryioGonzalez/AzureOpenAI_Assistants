@@ -1,27 +1,25 @@
-"""
-This module is useful for OpenAPI interoworking
-"""
-from utilities.observability_helper import ObservabilityHelper
-
+"""This module is useful for OpenAPI interoworking."""
 import json
 import random
 import requests
 
+from utilities.observability_helper import ObservabilityHelper
 
 class OpenAPIHelper:
-    """
-    This class abstract OpenAPI operations
-    """
+    """This class abstract OpenAPI operations."""
+
 # INITIALIZATION METHODS ########################################
     VERBOSE = False
 
     @staticmethod
     def _extract_spec(openapi_json_spec_file):
+        """Extract OpenAPI Spec as JSON."""
         with open(openapi_json_spec_file, 'r', encoding="utf-8") as json_file:
             return json.load(json_file)
 
     @staticmethod
     def _create_function_dict(openapi_spec):
+        """Create a dict out of specs."""
         function_dict = {}
 
         for path in openapi_spec['paths']:
@@ -40,6 +38,7 @@ class OpenAPIHelper:
 # PRIVATE METHODS ########################################
     @staticmethod
     def _parse_path(json_path):
+        """Parse an OpenAPI path."""
         dictionary_output = {}
         dictionary_output['name']        = json_path['operationId']
         dictionary_output['description'] = json_path['summary']
@@ -66,6 +65,7 @@ class OpenAPIHelper:
 
     @staticmethod
     def _extract_openai_functions(openapi_spec):
+        """Extract OpenAPI functions."""
         openai_functions = []
         for path in openapi_spec['paths']:
             # POST METHODS REQUIRE A DIFFERENT STRUCTURE. TBD
@@ -73,13 +73,14 @@ class OpenAPIHelper:
             supported_http_methods = ['get']
             for http_method in supported_http_methods:
                 if http_method in openapi_spec['paths'][path]:
-                    dict_output = OpenAPIHelper._parse_path(openapi_spec['paths'][path][http_method])
-                    openai_functions.append(dict_output)
+                    dictionary = OpenAPIHelper._parse_path(openapi_spec['paths'][path][http_method])
+                    openai_functions.append(dictionary)
 
         return openai_functions
 
     @staticmethod
     def _construct_call_fqdns(function_data, function_args, server_list):
+        """Construct function FQDNs."""
         params = function_data.get('parameters', None)
         path   = function_data['path']
 
@@ -108,20 +109,16 @@ class OpenAPIHelper:
 # PUBLIC METHODS ########################################
     @staticmethod
     def validate_spec_json(new_spec_body):
+        """Validate JSON Spec."""
         try:
             new_spec_json = json.loads(new_spec_body)
-            if ('info' in new_spec_json and 'paths' in new_spec_json and 'servers' in new_spec_json):
-                return True
-            else:
-                return False
+            return 'info' in new_spec_json and 'paths' in new_spec_json and 'servers'
         except json.JSONDecodeError:
             return False
 
     @staticmethod
     def extract_openai_functions_from_spec(openapi_spec):
-        """
-            Get a list of functions that can be passed as tools to OpenAI from an OpenAPI Spec
-        """
+        """Get a list of functions that can be passed as tools to OpenAI from an OpenAPI Spec."""
         openapi_spec_json = json.loads(openapi_spec)
         openai_functions = OpenAPIHelper._extract_openai_functions(openapi_spec_json)
 
@@ -129,9 +126,7 @@ class OpenAPIHelper:
 
     @staticmethod
     def call_function(function_name, function_args, openapi_spec):
-        """
-            Executes a function
-        """
+        """Execute a function."""
         function_dict   = OpenAPIHelper._create_function_dict(openapi_spec)
         function_data   = function_dict[function_name]
         function_method = function_data['method']
@@ -158,6 +153,6 @@ class OpenAPIHelper:
             except Exception:
                 continue
 
-        ObservabilityHelper.log("ERROR - No successful response from functions", OpenAPIHelper.VERBOSE)
+        ObservabilityHelper.log("ERROR - No response from functions", OpenAPIHelper.VERBOSE)
 
         return "No response from function call"

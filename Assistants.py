@@ -1,4 +1,4 @@
-"""Main page"""
+"""Main page."""
 from streamlit.runtime.scriptrunner import get_script_run_ctx
 import streamlit as st
 
@@ -34,8 +34,8 @@ if st.session_state['manager'].are_there_assistants():
             st.markdown(message["content"])
 
 # DISPLAY - GET FILE INFO
-    # Placeholder. Issue in dealing with files
-    # uploaded_file = st.file_uploader(content.MAIN_ASSISTANT_UPLOAD_DOCUMENT)
+    # Placeholder. Files not yet supported
+    #uploaded_file = st.file_uploader(content.MAIN_ASSISTANT_UPLOAD_DOCUMENT)
     uploaded_file = None
     if uploaded_file is not None:
         st.session_state['logger'].log("New uploaded file", verbose=VERBOSE)

@@ -1,4 +1,4 @@
-"""Page for managing Assistants in a page"""
+"""Page for managing Assistants in a page."""
 import datetime
 import json
 import pandas as pd
@@ -14,6 +14,7 @@ VERBOSE = True
 
 
 def get_assistant_data(function_list):
+    """Get function definition."""
     def get_function_definition_dict(function_definition):
         function_defitinion_dict = {}
         function_defitinion_dict['name'] = function_definition.name
@@ -24,36 +25,47 @@ def get_assistant_data(function_list):
 
         return function_defitinion_json
 
-    filtered_function_data = [{'name': function.function.name, 'definition': get_function_definition_dict(function.function)} for function in function_list]
+    filtered_function_data = [{
+                                'name': function.function.name,
+                                'definition': get_function_definition_dict(function.function)
+                            } for function in function_list]
 
     return filtered_function_data
 
 
 def get_file_data(file_list):
-    filtered_file_data = [{'name': file.filename, 'size': f"{round(file.bytes/1024,1)} MB", 'created': datetime.datetime.utcfromtimestamp(file.created_at).strftime('%Y-%m-%d %H:%M:%S')} for file in file_list]
+    """Get file data."""
+    filtered_file_data = [{
+                            'name': file.filename,
+                            'size': f"{round(file.bytes/1024,1)} MB",
+                            'created': datetime.datetime.utcfromtimestamp(file.created_at).strftime('%Y-%m-%d %H:%M:%S')
+                        } for file in file_list]
 
     return pd.DataFrame(filtered_file_data)
 
 
 def update_function(function_data):
+    """Update function definition."""
     assistant_id, function_name = function_data
     key = "function_definition_" + function_name
-    new_spec_data = st.session_state[key]
+    spec_data = st.session_state[key]
 
     try:
-        new_spec_json = json.loads(new_spec_data)
+        spec_json = json.loads(spec_data)
         st.session_state['logger'].log("Updating function {new_spec_json['name']}", verbose=VERBOSE)
-        st.session_state['manager'].llm_helper.update_assistant_function(assistant_id, new_spec_json)
+        st.session_state['manager'].llm_helper.update_assistant_function(assistant_id, spec_json)
     except json.JSONDecodeError:
         st.session_state['logger'].log("Not a valid function JSON", verbose=VERBOSE)
 
 
 def delete_function(function_data):
+    """Delete function definition."""
     assistant_id, function_name = function_data
     st.session_state['manager'].llm_helper.delete_assistant_function(assistant_id, function_name)
 
 
 def update_instructions(assistant_data):
+    """Update instructions."""
     assistant_id, previous_instructions = assistant_data
     if previous_instructions != st.session_state['updated_instructions']:
         st.session_state['logger'].log(f"For assistant {assistant_id} update instructions {st.session_state['updated_instructions']} from {previous_instructions}", verbose=VERBOSE)
@@ -63,11 +75,13 @@ def update_instructions(assistant_data):
 
 
 def update_code_interpreter(assistant_id):
+    """Change code interpreter."""
     st.session_state['logger'].log(f"For {assistant_id} code interpreter is {st.session_state['code_interpreter']}", verbose=VERBOSE)
     st.session_state['manager'].llm_helper.update_assistant_code_interpreter_tool(assistant_id, st.session_state['code_interpreter'])
 
 
 def delete_assistant(assistant_id):
+    """Delete Assistant."""
     st.session_state['logger'].log(f"Deleting {assistant_id} ", verbose=VERBOSE)
     st.session_state['manager'].llm_helper.delete_assistant(assistant_id)
 
@@ -101,7 +115,7 @@ if st.session_state['manager'].are_there_assistants():
             new_assistant_submit       = st.form_submit_button(content.MANAGE_CREATE_ASSISTANT_SUBMIT)
 
         # New function submitted
-    if (new_assistant_submit):
+    if new_assistant_submit:
         if new_assistant_name != "" and new_assistant_instructions != "":
             if st.session_state['manager'].llm_helper.is_duplicated_assistant(new_assistant_name) is False:
                 st.session_state['manager'].llm_helper.create_assistant(new_assistant_name, new_assistant_instructions)
@@ -143,7 +157,7 @@ if st.session_state['manager'].are_there_assistants():
             new_spec_body   = st.text_area(content.MANAGE_ASSISTANT_ACTION_ADD_BODY, key="manage_text_new_spec", height=400)
             new_spec_submit = st.form_submit_button(content.MANAGE_ASSISTANT_ACTION_ADD_BUTTON)
     # New function submitted
-    if (new_spec_submit):
+    if new_spec_submit:
         if OpenAPIHelper.validate_spec_json(new_spec_body):
             openai_functions = OpenAPIHelper.extract_openai_functions_from_spec(new_spec_body)
             for openai_function in openai_functions:
@@ -172,12 +186,14 @@ if st.session_state['manager'].are_there_assistants():
     st.write(content.MANAGE_SELECTED_ASSISTANT_CAPABILITIES)
     st.toggle(content.MANAGE_SELECTED_ASSISTANT_CAPABILITIES_CODE_INTERPRETER, on_change=update_code_interpreter, key="code_interpreter", args=(selected_assistant_id,),  value=selected_assistant_has_code_interpreter)
 # DISPLAY - ASSISTANT files
-    st.markdown(f"<div style='text-align: center;'>{content.MANAGE_SELECTED_ASSISTANT_FILES}</div>", unsafe_allow_html=True)
 
-    if len(selected_assistant_files) > 0:
-        file_data_list = get_file_data(selected_assistant_files)
-        st.write(file_data_list)
-    else:
-        st.write(content.MANAGE_NO_FILE_MESSAGE)
+    # st.markdown(f"<div style='text-align: center;'>{content.MANAGE_SELECTED_ASSISTANT_FILES}</div>", unsafe_allow_html=True)
+
+    # if len(selected_assistant_files) > 0:
+    #     file_data_list = get_file_data(selected_assistant_files)
+    #     st.write(file_data_list)
+    # else:
+    #     st.write(content.MANAGE_NO_FILE_MESSAGE)
+    #
 else:
     st.write(content.MAIN_NO_ASSISTANT_TEXT)

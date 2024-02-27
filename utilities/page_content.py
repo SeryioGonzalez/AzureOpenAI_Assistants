@@ -1,3 +1,5 @@
+"""All user facing text should be modeled in this file."""
+
 # MAIN PAGE
 MAIN_TITLE_TEXT = "Azure OpenAI Assistants"
 MAIN_ASSISTANT_CHAT_WELCOME = "How can I help you?"

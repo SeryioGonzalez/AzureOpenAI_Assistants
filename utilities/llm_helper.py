@@ -1,8 +1,11 @@
-"""Module managing LLM interaction"""
+"""Module managing LLM interaction."""
+import json
+import io
+import openai
 from openai import AzureOpenAI
 from openai.pagination import SyncCursorPage
-from openai.types.beta.assistant import ToolFunction        as ToolFunction
-from openai.types.beta.assistant import ToolCodeInterpreter as ToolCodeInterpreter
+from openai.types.beta.assistant import ToolFunction
+from openai.types.beta.assistant import ToolCodeInterpreter
 
 if __name__ == '__main__':
     from env_helper   import EnvHelper
@@ -11,14 +14,11 @@ else:
     from utilities.env_helper   import EnvHelper
     from utilities.observability_helper import ObservabilityHelper
 
-import json
-import io
-import openai
-
-
 class LLMHelper:
-    """Class managing LLM interaction"""
+    """Class managing LLM interaction."""
+
     def __init__(self):
+        """Initialize the LLM Helper."""
         self.env_helper: EnvHelper = EnvHelper()
         self.observability_helper = ObservabilityHelper()
         self.llm_client = AzureOpenAI(
@@ -30,14 +30,17 @@ class LLMHelper:
         self.verbose = True
 
     def is_duplicated_assistant(self, new_assistant_name):
+        """Check if the assistant is duplicated."""
         existing_assistant_names = [assistant.name for assistant in self.get_assistants()]
 
         return new_assistant_name in existing_assistant_names
 
     def create_assistant(self, new_assistant_name, new_assistant_instructions):
+        """Crate assistants. Public."""
         self._create_assistant(new_assistant_name, new_assistant_instructions, [])
 
     def _create_assistant(self, assistant_name: str, instructions: str, tools: list):
+        """Crate assistants. Private."""
         assistant = self.llm_client.beta.assistants.create(
             name=assistant_name,
             instructions=instructions,
@@ -48,72 +51,75 @@ class LLMHelper:
         return assistant
 
     def create_assistant_file(self, assistant_id, file_id):
-        # Upload the file to OpenAI
+        """Upload the file to OpenAI."""
         file_upload_to_assistant_response = self.llm_client.beta.assistants.files.create(
             assistant_id, file_id=file_id
         )
 
         if file_upload_to_assistant_response.id is not None:
+            self.observability_helper.log("Uploading file to assistant OK", self.verbose)
             return True
         else:
             self.observability_helper.log("Uploading file to assistant failed", self.verbose)
             return False
 
     def get_assistants(self):
-        """List Assistants"""
+        """List Assistants."""
         assistant_list = self.llm_client.beta.assistants.list().data
 
         return assistant_list
 
     def get_assistant_files(self, assistant_id):
+        """List Assistants files."""
         assistant_list = self.llm_client.beta.assistants.files(assistant_id)
 
         return assistant_list
 
     def get_assistant(self, assistant_id):
+        """Get Assistants."""
         assistant = self.llm_client.beta.assistants.retrieve(assistant_id)
         return assistant
 
-    # TODO
     def get_assistant_file(self, assistant_id, file_id):
+        """To be done."""
         return None
 
-    # TODO
     def modify_assistant(self, assistant_id, assistant):
+        """To be done."""
         return None
 
     def delete_assistant(self, assistant_id):
+        """Delete assistant."""
         try:
             self.observability_helper.log(f"Deleting assistant {assistant_id}", self.verbose)
             self.llm_client.beta.assistants.delete(assistant_id)
         except openai.NotFoundError:
             self.observability_helper.log(f"Assistant {assistant_id} does not exist", self.verbose)
 
-    # TODO
     def delete_assistant_file(self, assistant_id, file_id):
+        """To be done."""
         return None
 
     def create_assistant_thread(self):
-        """Create Assistant Thread"""
+        """Create Assistant Thread."""
         thread = self.llm_client.beta.threads.create()
 
         return thread.id
 
-    # TODO
     def get_assistant_thread(self, thread_id):
+        """To be done."""
         return None
 
-    # TODO
     def modify_assistant_thread(self, thread_id):
+        """To be done."""
         return None
 
-    # TODO
     def delete_assistant_thread(self, thread_id):
+        """To be done."""
         return None
 
     def add_message_to_assistant_thread(self, thread_id, message_role, message_content, file_ids):
-        """Add message to Assistant thread"""
-
+        """Add message to Assistant thread."""
         self.observability_helper.log(f"Creating message with content {message_content} and role {message_role} to thread {thread_id} with file ids:  {file_ids}", self.verbose)
 
         self.llm_client.beta.threads.messages.create(
@@ -124,29 +130,29 @@ class LLMHelper:
         )
 
     def get_messages_in_assistant_thread(self, thread_id):
-        """List messages in thread"""
+        """List messages in thread."""
         messages = self.llm_client.beta.threads.messages.list(thread_id=thread_id)
 
         return messages
 
-    # TODO
     def get_files_in_assistant_thread_message(self, thread_id, message_id):
+        """To be done."""
         return None
 
-    # TODO
     def get_assistant_thread_message(self, thread_id, message_id):
+        """To be done."""
         return None
 
-    # TODO
     def get_file_in_assistant_thread_message(self, thread_id, message_id, file_id):
+        """To be done."""
         return None
 
-    # TODO
     def modify_assistant_thread_message(self, thread_id, message_id, metadata):
+        """To be done."""
         return None
 
     def create_assistant_thread_run(self, thread_id, assistant_id, run_instructions):
-        """Run Assistant"""
+        """Run Assistant."""
         assistant_data  = self.get_assistant(assistant_id)
         assistant_tools = self._tools_to_json(assistant_data.tools)
 
@@ -159,19 +165,20 @@ class LLMHelper:
 
         return run
 
-    # TODO
     def create_assistant_thread_run_and_run_it(self, metadata):
+        """To be done."""
         return None
 
-    # TODO
     def get_assistant_thread_runs(self, thread_id):
+        """To be done."""
         return None
 
-    # TODO
     def get_assistant_thread_run_steps(self, thread_id, run_id):
+        """To be done."""
         return None
 
     def get_assistant_thread_run(self, thread_id, run_id):
+        """Create Thread run."""
         run = self.llm_client.beta.threads.runs.retrieve(
             thread_id=thread_id,
             run_id=run_id
@@ -179,26 +186,28 @@ class LLMHelper:
 
         return run
 
-    # TODO
     def get_assistant_thread_run_step(self, thread_id, run_id, step_id):
+        """To be done."""
         return None
 
-    # TODO
     def modify_assistant_thread_run(self, thread_id, run_id, metadata):
+        """To be done."""
         return None
 
     def submit_tool_outputs_to_assistant_thread_run(self, thread_id, run_id, tool_output_list):
+        """Submit tool output to thread run."""
         self.llm_client.beta.threads.runs.submit_tool_outputs(
             thread_id=thread_id,
             run_id=run_id,
             tool_outputs=tool_output_list
             )
 
-    # TODO
     def cancel_assistant_thread_runs(self, thread_id, run_id):
+        """To be done."""
         return None
 
     def get_assistant_thread_messages(self, thread_id):
+        """Get assistant thread messages."""
         try:
             messages = self.llm_client.beta.threads.messages.list(thread_id=thread_id)
             if isinstance(messages, SyncCursorPage):
@@ -210,10 +219,12 @@ class LLMHelper:
 
 # INSTRUCTIONS
     def update_assistant_instructions(self, assistant_id, updated_instructions):
+        """Update instructions."""
         self.llm_client.beta.assistants.update(assistant_id, instructions=updated_instructions)
 
 # FUNCTIONS
     def _tools_to_json(self, assistant_tools):
+        """Transform tools to JSON."""
         tool_list = []
         for assistant_tool in assistant_tools:
             if assistant_tool.type == "function":
@@ -227,6 +238,7 @@ class LLMHelper:
         return tool_list
 
     def delete_assistant_function(self, assistant_id, function_name_to_delete):
+        """Delete assistant function."""
         assistant_data  = self.get_assistant(assistant_id)
         assistant_tools = self._tools_to_json(assistant_data.tools)
         updated_tools = [tool for tool in assistant_tools if 'function' in tool and tool['function']['name'] != function_name_to_delete]
@@ -234,6 +246,7 @@ class LLMHelper:
         self.update_assistant_tools(assistant_id, updated_tools)
 
     def create_assistant_function(self, assistant_id, new_function_data):
+        """Create assistant function."""
         assistant_data  = self.get_assistant(assistant_id)
         existing_assistant_tools = self._tools_to_json(assistant_data.tools)
 
@@ -247,6 +260,7 @@ class LLMHelper:
         self.update_assistant_tools(assistant_id, existing_assistant_tools)
 
     def update_assistant_function(self, assistant_id, updated_function_json):
+        """Update assistant function."""
         assistant_data  = self.get_assistant(assistant_id)
         assistant_tools = self._tools_to_json(assistant_data.tools)
 
@@ -262,6 +276,7 @@ class LLMHelper:
         self.update_assistant_tools(assistant_id, existing_tools)
 
     def update_assistant_code_interpreter_tool(self, assistant_id, is_code_interpreter_enabled):
+        """Update assistant code interpreter function."""
         assistant_data  = self.get_assistant(assistant_id)
         assistant_tools = [tool for tool in self._tools_to_json(assistant_data.tools) if tool['type'] != "code_interpreter"]
 
@@ -271,21 +286,20 @@ class LLMHelper:
         self.update_assistant_tools(assistant_id, assistant_tools)
 
     def update_assistant_tools(self, assistant_id, assistant_tools):
+        """Update assistant tools."""
         self.llm_client.beta.assistants.update(assistant_id, tools=assistant_tools)
 
     def is_duplicated_function(self, assistant_id, new_function_body):
+        """Check if an assistant is duplicated."""
         this_assistant = self.get_assistant(assistant_id)
         assistant_function_names = [tool_function.function.__dict__['name'] for tool_function in self.get_functions_from_assistant(this_assistant)]
         new_function_name = json.loads(new_function_body)['name']
 
-        if new_function_name in assistant_function_names:
-            return True
-        else:
-            return False
+        return new_function_name in assistant_function_names
 
 # FILES
     def upload_file(self, file_byte_data):
-        # Upload the file to OpenAI
+        """Upload the file to OpenAI."""
         file_upload_response = self.llm_client.files.create(
             file=io.BytesIO(file_byte_data),
             purpose='assistants'
@@ -297,7 +311,7 @@ class LLMHelper:
             return False, None
 
     def delete_all_files(self):
-        # Upload the file to OpenAI
+        """Delete all files."""
         print("Listing assistants")
         for assistant_data in self.llm_client.beta.assistants.list().data:
             if len(assistant_data.file_ids) == 0:
@@ -315,6 +329,7 @@ class LLMHelper:
             self.llm_client.files.delete(file_id)
 
     def get_completion(self, messages):
+        """Get completion."""
         completion = self.llm_client.chat.completions.create(
             model=self.openai_deployment,
             messages=messages
@@ -325,6 +340,7 @@ class LLMHelper:
         return completion_text
 
     def check_openai_endpoint(self, az_openai_service_endpoint, az_openai_service_key, az_openai_service_deployment):
+        """Check OpenAI endpoint."""
         llm_client = AzureOpenAI(
             azure_endpoint=az_openai_service_endpoint,
             api_key=az_openai_service_key,
@@ -337,23 +353,28 @@ class LLMHelper:
         )
 
     def get_file(self, file_id):
+        """Get a file."""
         file = self.llm_client.files.retrieve(file_id)
         return file
 
 # OBJECT OPERATIONS
-    def get_functions_from_assistant(self, assistant_instance):
-        tool_functions = [tool for tool in assistant_instance.tools if isinstance(tool, ToolFunction)]
+    def get_functions_from_assistant(self, assistant):
+        """Get function from assistant."""
+        tool_functions = [tool for tool in assistant.tools if isinstance(tool, ToolFunction)]
         return tool_functions
 
     def assistant_has_code_interpreter(self, assistant_instance):
+        """Check if an assistant has code interpreter."""
         tool_code_interpreter = [tool for tool in assistant_instance.tools if isinstance(tool, ToolCodeInterpreter)]
         return len(tool_code_interpreter) > 0
 
     def get_files_from_assistant(self, assistant_instance):
+        """Get files from assistant."""
         assistant_files = [self.get_file(file_id) for file_id in assistant_instance.file_ids]
         return assistant_files
 
     def validate_function_json(self, function_text):
+        """Validate the JSON of a function."""
         try:
             # Attempt to parse the string as JSON
             json.loads(function_text)

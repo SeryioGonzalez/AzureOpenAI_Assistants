@@ -1,4 +1,4 @@
-"""Manages Assistant flows"""
+"""Manages Assistant flows."""
 import json
 import time
 
@@ -9,26 +9,25 @@ from utilities.openapi_helper       import OpenAPIHelper
 
 
 class Manager:
-    """App manager class"""
+    """App manager class."""
 
     def __init__(self, session_id):
+        """Initialize a manager for a given session. It has a container for threads."""
         self.session_id = session_id
         self.thread_container = {}
-        self.api_response_sleep_time = 1
 
         self.llm_helper = LLMHelper()
         self.env_helper = EnvHelper()
         self.observability_helper = ObservabilityHelper()
-        self.verbose = True
-        self.observability_helper.log(f"New Manager created for session id {self.session_id}", self.verbose)
 
-        with open('ikea_openapi.json', 'r') as file:
+        self.api_response_sleep_time = 1
+        self.verbose = True
+
+        with open('ikea_openapi.json', 'r', encoding="utf-8") as file:
             self.openapi_spec = json.load(file)
 
-    def log(self, log):
-        self.observability_helper.log(log, self.verbose)
-
     def get_message_list(self, assistant_id):
+        """Get messages for current thread in assistant. Exposed to pages."""
         if assistant_id in self.thread_container:
             thread_id = self.thread_container[assistant_id]
             return self.get_thread_messages(thread_id)
@@ -36,43 +35,43 @@ class Manager:
             return []
 
     def are_there_assistants(self):
-        """Checks if are the assistants"""
+        """Check if are the assistants."""
         return len(self.get_assistant_list()) > 0
 
     def get_assistant_list(self):
-        """Get Assistant list"""
+        """Get Assistant list."""
         assistant_list = self.llm_helper.get_assistants()
         return assistant_list
 
     def get_assistant_id_name_tuple_list(self):
-        """Get Assistant id and names"""
+        """Get Assistant id and names."""
         assistant_list = self.get_assistant_list()
         assistant_name_id_list = [(assistant.id, assistant.name) for assistant in assistant_list]
 
         return assistant_name_id_list
 
     def get_assistant_name_list(self):
-        """Get Assistant names"""
+        """Get Assistant names."""
         assistant_list = self.get_assistant_list()
         assistant_name_list = [assistant.name for assistant in assistant_list]
 
         return assistant_name_list
 
     def get_assistant(self, assistant_id):
-        """Get Assistant by id"""
+        """Get Assistant by id."""
         assistant = self.llm_helper.get_assistant(assistant_id)
 
         return assistant
 
     def get_assistant_field(self, assistant_name, assistant_field):
-        """Gets a field of a given assistance"""
+        """Get a field of a given assistance."""
         assistant_list = self.get_assistant_list()
         assistant_field = [getattr(assistant, assistant_field, "") for assistant in assistant_list if assistant.name == assistant_name][0]
 
         return assistant_field
 
     def get_thread(self, assistant_id):
-        """Runs a thread with the assistant"""
+        """Run a thread with the assistant."""
         if assistant_id not in self.thread_container:
             thread_id = self.llm_helper.create_assistant_thread()
             # Single thread per assistant. All files to be sent
@@ -83,6 +82,7 @@ class Manager:
         return self.thread_container[assistant_id]['thread_id']
 
     def get_thread_messages(self, thread_id):
+        """Initialize a manager for a given session. It has a container for threads."""
         raw_messages = self.llm_helper.get_assistant_thread_messages(thread_id)
         self.observability_helper.log(f"Returned raw messages of type {type(raw_messages)} in {thread_id} are {raw_messages}", self.verbose)
         if len(raw_messages) > 0:
@@ -92,17 +92,18 @@ class Manager:
             return []
 
     def get_uploaded_files(self, assistant_id):
+        """Get uploaded files by the user for current thread in assistant."""
         return list(self.thread_container[assistant_id]['files'])
 
     def run_thread(self, prompt, assistant_id):
-        """Runs a thread with the assistant"""
+        """Run a thread with the assistant."""
         # Get or create a thread
         thread_id = self.get_thread(assistant_id)
         # Get files in thread
-        assistant_file_ids = self.get_uploaded_files(assistant_id)
+        file_ids = self.get_uploaded_files(assistant_id)
 
         # Add message to thread (llm)
-        self.llm_helper.add_message_to_assistant_thread(thread_id, "user", prompt, assistant_file_ids)
+        self.llm_helper.add_message_to_assistant_thread(thread_id, "user", prompt, file_ids)
 
         run = self.llm_helper.create_assistant_thread_run(thread_id, assistant_id, "Do your best")
 
@@ -138,7 +139,7 @@ class Manager:
         return message_list
 
     def upload_file(self, uploaded_file, verbose=False):
-        """Uploads a file"""
+        """Upload a file."""
         bytes_data = uploaded_file.getvalue()
         self.observability_helper.log(f"Uploading file {uploaded_file.name}", verbose)
         upload_success, file_id = self.llm_helper.upload_file(bytes_data)
@@ -151,12 +152,12 @@ class Manager:
         return upload_success, file_id
 
     def track_assistant_file_for_messages(self, assistant_id, file_id, verbose=True):
-        """Adds assistant to file"""
+        """Add assistant to file."""
         self.thread_container[assistant_id]['files'].add(file_id)
         self.observability_helper.log(f"File {file_id} to assistant id {assistant_id} OK", verbose)
 
     def upload_file_to_assistant(self, assistant_id, uploaded_file, verbose=True):
-        """Pushes file to assistants"""
+        """Push file to assistants."""
         upload_success, file_id = self.upload_file(uploaded_file)
 
         upload_to_assistant = False
@@ -176,7 +177,7 @@ class Manager:
         return upload_to_assistant, file_id
 
     def upload_file_for_assistant_messages(self, assistant_id, uploaded_file, verbose=True):
-        """Pushes file to assistants"""
+        """Push file to assistants."""
         upload_success, file_id = self.upload_file(uploaded_file)
 
         if upload_success:

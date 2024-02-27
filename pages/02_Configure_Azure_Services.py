@@ -1,4 +1,4 @@
-"""Page for Configuring Azure services"""
+"""Page for Configuring Azure services."""
 from streamlit.runtime.scriptrunner import get_script_run_ctx
 import streamlit as st
 
@@ -10,6 +10,7 @@ VERBOSE = True
 
 
 def check_openai_config():
+    """Check OpenAI Config."""
     try:
         st.session_state['manager'].llm_helper.check_openai_endpoint(
             st.session_state['manager'].env_helper.OPENAI_API_BASE,
@@ -22,16 +23,19 @@ def check_openai_config():
 
 
 def on_change_aoai_api_base():
+    """Change OpenAI Config. API Endopint."""
     st.session_state['manager'].env_helper.OPENAI_API_BASE = st.session_state['aoai_api_base']
     check_openai_config()
 
 
 def on_change_aoai_key():
+    """Change OpenAI Config. API key."""
     st.session_state['manager'].env_helper.OPENAI_API_KEY = st.session_state['aoai_key']
     check_openai_config()
 
 
 def on_change_aoai_deployment():
+    """Change OpenAI Config. Deployment."""
     st.session_state['manager'].env_helper.AZURE_OPENAI_MODEL_DEPLOYMENT_NAME = st.session_state['aoai_deployment']
     check_openai_config()
 
