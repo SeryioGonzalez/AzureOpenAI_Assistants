@@ -10,16 +10,18 @@ from utilities.openapi_helper       import OpenAPIHelper
 class Manager:
     """App manager class"""
 
-    def __init__(self):
+    def __init__(self, session_id):
+        self.session_id = session_id
+        self.session_container = {}
+        self.message_list = {}
+        self.uploaded_files = {}
+        self.api_response_sleep_time = 1
+
         self.llm_helper = LLMHelper()
         self.env_helper= EnvHelper()
         self.observability_helper = ObservabilityHelper()
         self.verbose = True
         self.observability_helper.log("New Manager created", self.verbose)
-        self.session_container = {}
-        self.message_list = {}
-        self.uploaded_files = {}
-        self.api_response_sleep_time = 1
 
         with open('ikea_openapi.json', 'r') as file:
             self.openapi_spec = json.load(file)

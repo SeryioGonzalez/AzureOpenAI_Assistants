@@ -8,11 +8,11 @@ from manager import Manager
 
 VERBOSE = True
 
-if 'initialized' not in st.session_state:
-    st.session_state['manager'] = Manager()
+if 'session_id' not in st.session_state:
     ctx = get_script_run_ctx()
     st.session_state['session_id'] = ctx.session_id
-    st.session_state['initialized'] = True
+    st.session_state['manager'] = Manager(st.session_state['session_id'])
+    
     st.session_state['logger'] = ObservabilityHelper()
     st.session_state['logger'].log(f"New session created with id {st.session_state['session_id']}", verbose=VERBOSE)
 

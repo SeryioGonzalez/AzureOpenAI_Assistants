@@ -1,12 +1,14 @@
-import utilities.page_content as content
-from utilities.observability_helper import ObservabilityHelper
-from utilities.openapi_helper import OpenAPIHelper
-from manager import Manager
-
+"""Page for managing Assistants"""
 import datetime
 import json
 import pandas as pd
 import streamlit as st
+from streamlit.runtime.scriptrunner import get_script_run_ctx
+
+import utilities.page_content as content
+from utilities.observability_helper import ObservabilityHelper
+from utilities.openapi_helper import OpenAPIHelper
+from manager import Manager
 
 verbose = True
 
@@ -62,10 +64,12 @@ def delete_assistant(assistant_id):
     st.session_state['logger'].log(f"Deleting {assistant_id} ", verbose=verbose)
     st.session_state['manager'].llm_helper.delete_assistant(assistant_id)   
 
-if 'initialized' not in st.session_state:
-    st.session_state['manager'] = Manager()
+if 'session_id' not in st.session_state:
+    ctx = get_script_run_ctx()
+    st.session_state['session_id'] = ctx.session_id
+    st.session_state['manager'] = Manager(st.session_state['session_id'])
+    
     st.session_state['logger'] = ObservabilityHelper()
-    st.session_state['initialized'] = True
 
 st.session_state['logger'].log("Configuring assistants", verbose=verbose)
 

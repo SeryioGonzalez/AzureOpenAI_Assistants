@@ -1,9 +1,12 @@
+"""Page for Configuring Azure services"""
+from streamlit.runtime.scriptrunner import get_script_run_ctx
+import streamlit as st
+
 from manager import Manager
 from utilities.env_helper   import EnvHelper
 from utilities.observability_helper import ObservabilityHelper
 import utilities.page_content as content
 
-import streamlit as st
 
 def check_openai_config():
     try:
@@ -28,10 +31,12 @@ def on_change_aoai_deployment():
    st.session_state['manager'].env_helper.AZURE_OPENAI_MODEL_DEPLOYMENT_NAME = st.session_state['aoai_deployment']
    check_openai_config()
 
-if 'initialized' not in st.session_state:
-    st.session_state['manager'] = Manager()
+if 'session_id' not in st.session_state:
+    ctx = get_script_run_ctx()
+    st.session_state['session_id'] = ctx.session_id
+    st.session_state['manager'] = Manager(st.session_state['session_id'])
+
     st.session_state['logger'] = ObservabilityHelper()
-    st.session_state['initialized'] = True
 
 
 st.header(content.VARIABLE_PAGE_HEADER)
