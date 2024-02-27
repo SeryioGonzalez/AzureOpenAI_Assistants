@@ -10,7 +10,7 @@ from utilities.observability_helper import ObservabilityHelper
 from utilities.openapi_helper import OpenAPIHelper
 from manager import Manager
 
-verbose = True
+VERBOSE = True
 
 def get_assistant_data(function_list):
     def get_function_definition_dict(function_definition):
@@ -39,10 +39,10 @@ def update_function(function_data):
     
     try:
         new_spec_json = json.loads(new_spec_data)
-        st.session_state['logger'].log(f"Updating function {new_spec_json['name']}", verbose=verbose)
+        st.session_state['logger'].log(f"Updating function {new_spec_json['name']}", verbose=VERBOSE)
         st.session_state['manager'].llm_helper.update_assistant_function(assistant_id, new_spec_json)
     except json.JSONDecodeError:
-            st.session_state['logger'].log(f"Not a valid function JSON", verbose=verbose)
+            st.session_state['logger'].log(f"Not a valid function JSON", verbose=VERBOSE)
 
 def delete_function(function_data):
     assistant_id, function_name = function_data
@@ -51,17 +51,17 @@ def delete_function(function_data):
 def update_instructions(assistant_data):
     assistant_id, previous_instructions = assistant_data
     if previous_instructions != st.session_state['updated_instructions']:
-        st.session_state['logger'].log(f"For assistant {assistant_id} update instructions {st.session_state['updated_instructions']} from {previous_instructions}", verbose=verbose)
+        st.session_state['logger'].log(f"For assistant {assistant_id} update instructions {st.session_state['updated_instructions']} from {previous_instructions}", verbose=VERBOSE)
         st.session_state['manager'].llm_helper.update_assistant_instructions(assistant_id, st.session_state['updated_instructions'])
     else:
-        st.session_state['logger'].log(f"No updated instructions for assistant {assistant_id}", verbose=verbose)
+        st.session_state['logger'].log(f"No updated instructions for assistant {assistant_id}", verbose=VERBOSE)
 
 def update_code_interpreter(assistant_id):
-    st.session_state['logger'].log(f"For {assistant_id} code interpreter is {st.session_state['code_interpreter']}", verbose=verbose)
+    st.session_state['logger'].log(f"For {assistant_id} code interpreter is {st.session_state['code_interpreter']}", verbose=VERBOSE)
     st.session_state['manager'].llm_helper.update_assistant_code_interpreter_tool(assistant_id, st.session_state['code_interpreter'])
 
 def delete_assistant(assistant_id):
-    st.session_state['logger'].log(f"Deleting {assistant_id} ", verbose=verbose)
+    st.session_state['logger'].log(f"Deleting {assistant_id} ", verbose=VERBOSE)
     st.session_state['manager'].llm_helper.delete_assistant(assistant_id)   
 
 if 'session_id' not in st.session_state:
@@ -70,8 +70,10 @@ if 'session_id' not in st.session_state:
     st.session_state['manager'] = Manager(st.session_state['session_id'])
 
     st.session_state['logger'] = ObservabilityHelper()
+    st.session_state['logger'].log(f"New session created with id {st.session_state['session_id']}", verbose=VERBOSE)
 
-st.session_state['logger'].log("Configuring assistants", verbose=verbose)
+st.session_state['logger'].log(f"Session id is {st.session_state['session_id']}", verbose=VERBOSE)
+st.session_state['logger'].log("Configuring assistants", verbose=VERBOSE)
 
 #DISPLAY - TITLE
 st.title(content.MANAGE_TITLE_TEXT )
@@ -95,14 +97,14 @@ if st.session_state['manager'].are_there_assistants():
         if new_assistant_name != "" and new_assistant_instructions != "":
             if st.session_state['manager'].llm_helper.is_duplicated_assistant(new_assistant_name) is False:
                 st.session_state['manager'].llm_helper.create_assistant(new_assistant_name, new_assistant_instructions)
-                st.session_state['logger'].log(f"New assistant {new_assistant_name} created - refreshing", verbose=verbose)
+                st.session_state['logger'].log(f"New assistant {new_assistant_name} created - refreshing", verbose=VERBOSE)
                 st.rerun()
             else:
-               st.session_state['logger'].log(f"Duplicated assistant {new_assistant_name}", verbose=verbose) 
+               st.session_state['logger'].log(f"Duplicated assistant {new_assistant_name}", verbose=VERBOSE) 
                st.error(content.MANAGE_CREATE_ASSISTANT_DUPLICATED)
             
         else:
-            st.session_state['logger'].log(f"Name {new_assistant_name} or instructions {new_assistant_instructions} not specified", verbose=verbose) 
+            st.session_state['logger'].log(f"Name {new_assistant_name} or instructions {new_assistant_instructions} not specified", verbose=VERBOSE) 
             st.error(content.MANAGE_CREATE_ASSISTANT_NO_NAME_OR_INSTRUCTIONS)
 
 #Selected Assistant
@@ -138,14 +140,14 @@ if st.session_state['manager'].are_there_assistants():
             openai_functions = OpenAPIHelper.extract_openai_functions_from_spec(new_spec_body)
             for openai_function in openai_functions:
                 st.session_state['manager'].llm_helper.create_assistant_function(selected_assistant_id, openai_function)
-                st.session_state['logger'].log(f"New function added - refreshing", verbose=verbose)
+                st.session_state['logger'].log(f"New function added - refreshing", verbose=VERBOSE)
             st.rerun()
 
         else:
             st.error(content.MANAGE_ASSISTANT_new_spec_NOT_VALID )
-            st.session_state['logger'].log(f"Not a valid function", verbose=verbose)
+            st.session_state['logger'].log(f"Not a valid function", verbose=VERBOSE)
 
-    st.session_state['logger'].log(f"Listing functions", verbose=verbose)
+    st.session_state['logger'].log(f"Listing functions", verbose=VERBOSE)
     #Listing function
     selected_assistant_functions = st.session_state['manager'].llm_helper.get_functions_from_assistant(selected_assistant)
     functions_data_list = get_assistant_data(selected_assistant_functions)

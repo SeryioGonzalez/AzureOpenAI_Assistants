@@ -7,6 +7,7 @@ from utilities.env_helper   import EnvHelper
 from utilities.observability_helper import ObservabilityHelper
 import utilities.page_content as content
 
+VERBOSE=True
 
 def check_openai_config():
     try:
@@ -37,6 +38,9 @@ if 'session_id' not in st.session_state:
     st.session_state['manager'] = Manager(st.session_state['session_id'])
 
     st.session_state['logger'] = ObservabilityHelper()
+    st.session_state['logger'].log(f"New session created with id {st.session_state['session_id']}", verbose=VERBOSE)
+
+st.session_state['logger'].log(f"Session id is {st.session_state['session_id']}", verbose=VERBOSE)
 
 
 st.header(content.VARIABLE_PAGE_HEADER)

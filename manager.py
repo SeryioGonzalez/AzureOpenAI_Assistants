@@ -12,39 +12,29 @@ class Manager:
 
     def __init__(self, session_id):
         self.session_id = session_id
-        self.session_container = {}
-        self.message_list = {}
-        self.uploaded_files = {}
+        self.thread_container = {}
+        #self.message_list = {}
+        #self.uploaded_files = {}
         self.api_response_sleep_time = 1
 
         self.llm_helper = LLMHelper()
         self.env_helper= EnvHelper()
         self.observability_helper = ObservabilityHelper()
         self.verbose = True
-        self.observability_helper.log("New Manager created", self.verbose)
+        self.observability_helper.log(f"New Manager created for session id {self.session_id}", self.verbose)
 
         with open('ikea_openapi.json', 'r') as file:
             self.openapi_spec = json.load(file)
 
     def log(self, log):
         self.observability_helper.log(log, self.verbose)
-
-    def get_message_list_length(self, assistant_id):
-        if assistant_id in self.message_list:
-            return len(self.message_list[assistant_id])
-        else:
-            return 0
         
     def get_message_list(self, assistant_id):
-        if assistant_id in self.message_list:
-            return self.message_list[assistant_id]
+        if assistant_id in self.thread_container:
+            thread_id = self.thread_container[assistant_id]
+            return self.get_thread_messages(thread_id)
         else:
-            return None
-        
-    def append_message(self, message, assistant_id):
-        if assistant_id not in self.message_list:
-            self.message_list[assistant_id] = []
-        self.message_list[assistant_id].append(message)
+            return []
 
     def are_there_assistants(self):
         """Checks if are the assistants"""
@@ -82,24 +72,45 @@ class Manager:
 
         return assistant_field
 
-    def run_thread(self, user_session_id, prompt, assistant_id):
+    def get_thread(self, assistant_id):
         """Runs a thread with the assistant"""
-        if user_session_id not in self.session_container:
-            thread = self.llm_helper.create_assistant_thread()
-            self.session_container[user_session_id] = {}
-            self.session_container[user_session_id][assistant_id] = thread
+        if assistant_id not in self.thread_container:
+            thread_id = self.llm_helper.create_assistant_thread()
+            #Single thread per assistant. All files to be sent
+            self.thread_container[assistant_id] = {}
+            self.thread_container[assistant_id]['thread_id'] = thread_id 
+            self.thread_container[assistant_id]['files']  = set()
+        
+        return self.thread_container[assistant_id]['thread_id']
+
+    def get_thread_messages(self, thread_id):
+        raw_messages = self.llm_helper.get_assistant_thread_messages(thread_id)
+        if len(raw_messages) > 0:
+            message_list = [{'message_value':message.content[0].text.value, 'message_role': message.role} for message in raw_messages.data ]
+
+            return message_list
         else:
-            if assistant_id not in self.session_container[user_session_id]:
-                thread = self.llm_helper.create_assistant_thread()
-                self.session_container[user_session_id][assistant_id] = thread
+            return []
 
-        thread = self.session_container[user_session_id][assistant_id]
+    def get_uploaded_files(self, assistant_id):
+        return self.thread_container[assistant_id]['files']
 
-        assistant_file_ids = self.uploaded_files.get(assistant_id, [])
+    """
+    def add_message_to_thread(self, assistant_id, message_content, message_role):
+        message = {"role": message_role, "content": message_content}
+        self.thread_container[assistant_id]['messages'].append(message)
+    """
+    def run_thread(self, prompt, assistant_id):
+        """Runs a thread with the assistant"""
+        #Get or create a thread
+        thread_id = self.get_thread(assistant_id)
+        #Get files in thread
+        assistant_file_ids = self.get_uploaded_files(assistant_id)
+        
+        #Add message to thread (llm)
+        self.llm_helper.add_message_to_assistant_thread(thread_id, "user", prompt, assistant_file_ids)
 
-        self.llm_helper.add_message_to_assistant_thread(thread, "user", prompt, assistant_file_ids)
-
-        run = self.llm_helper.create_assistant_thread_run(thread, assistant_id, "Be good")
+        run = self.llm_helper.create_assistant_thread_run(thread_id, assistant_id, "Do your best")
         
         while run.status != "completed":
             self.observability_helper.log(f"Run status is {run.status}", self.verbose)
@@ -121,17 +132,15 @@ class Manager:
 
                         tool_output_list.append(tool_call_output)
 
-                    self.llm_helper.submit_tool_outputs_to_assistant_thread_run(thread.id, run.id, tool_output_list)
+                    self.llm_helper.submit_tool_outputs_to_assistant_thread_run(thread_id, run.id, tool_output_list)
 
             time.sleep(self.api_response_sleep_time)
 
-            run = self.llm_helper.get_assistant_thread_run(thread.id, run.id)
+            run = self.llm_helper.get_assistant_thread_run(thread_id, run.id)
 
-        raw_messages = self.llm_helper.get_assistant_thread_messages(thread.id)
+        message_list = self.get_thread_messages(thread_id)
 
-        message_info = [{'message_value':message.content[0].text.value, 'message_role': message.role} for message in raw_messages.data ]
-
-        return message_info
+        return message_list
 
     def upload_file(self, uploaded_file, verbose=False):
         """Uploads a file"""
@@ -149,10 +158,8 @@ class Manager:
 
     def track_assistant_file_for_messages(self, assistant_id, file_id, verbose=True):
         """Adds assistant to file"""
-        if assistant_id not in self.uploaded_files:
-            self.uploaded_files[assistant_id] = []
-
-        self.uploaded_files[assistant_id].append(file_id)
+        thread_id = self.get_thread(assistant_id)
+        self.thread_container[assistant_id]['files'].add(file_id)
         self.observability_helper.log(f"File {file_id} to assistant id {assistant_id} OK", verbose)
 
     def upload_file_to_assistant(self, assistant_id, uploaded_file, verbose=True):
@@ -188,4 +195,4 @@ class Manager:
         else:
             self.observability_helper.log(f"Uploading file {file_id} failed", verbose)
             
-        return upload_success, file_id 
+        return upload_success 

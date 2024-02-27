@@ -95,7 +95,7 @@ class LLMHelper:
         """Create Assistant Thread"""
         thread = self.llm_client.beta.threads.create()
 
-        return thread
+        return thread.id
 
     #TODO
     def get_assistant_thread(self, thread_id):
@@ -109,13 +109,13 @@ class LLMHelper:
     def delete_assistant_thread(self, thread_id):
         return None
 
-    def add_message_to_assistant_thread(self, thread, message_role, message_content, file_ids):
+    def add_message_to_assistant_thread(self, thread_id, message_role, message_content, file_ids):
         """Add message to Assistant thread"""
 
-        self.observability_helper.log(f"Creating message with content {message_content} and role {message_role} to thread {thread.id} with file ids:  {file_ids}", self.verbose)
+        self.observability_helper.log(f"Creating message with content {message_content} and role {message_role} to thread {thread_id} with file ids:  {file_ids}", self.verbose)
 
         self.llm_client.beta.threads.messages.create(
-            thread_id=thread.id,
+            thread_id=thread_id,
             role=message_role,
             content=message_content,
             file_ids=file_ids
@@ -146,13 +146,13 @@ class LLMHelper:
     def modify_assistant_thread_message(self, thread_id, message_id, metadata):
         return None
 
-    def create_assistant_thread_run(self, thread, assistant_id, run_instructions):
+    def create_assistant_thread_run(self, thread_id, assistant_id, run_instructions):
         """Run Assistant"""
         assistant_data  = self.get_assistant(assistant_id)
         assistant_tools = self._tools_to_json(assistant_data.tools)
         
         run = self.llm_client.beta.threads.runs.create(
-            thread_id=thread.id,
+            thread_id=thread_id,
             assistant_id=assistant_id,
             instructions=run_instructions,
             tools=assistant_tools
@@ -200,9 +200,11 @@ class LLMHelper:
         return None
 
     def get_assistant_thread_messages(self, thread_id):
-        messages = self.llm_client.beta.threads.messages.list(thread_id=thread_id)
-
-        return messages
+        try:
+            messages = self.llm_client.beta.threads.messages.list(thread_id=thread_id)
+            return messages
+        except:
+            return []
 
 #INSTRUCTIONS
     def update_assistant_instructions(self, assistant_id, updated_instructions):
