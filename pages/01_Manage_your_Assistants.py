@@ -1,4 +1,4 @@
-"""Page for managing Assistants"""
+"""Page for managing Assistants in a page"""
 import datetime
 import json
 import pandas as pd
@@ -68,7 +68,7 @@ if 'session_id' not in st.session_state:
     ctx = get_script_run_ctx()
     st.session_state['session_id'] = ctx.session_id
     st.session_state['manager'] = Manager(st.session_state['session_id'])
-    
+
     st.session_state['logger'] = ObservabilityHelper()
 
 st.session_state['logger'].log("Configuring assistants", verbose=verbose)
