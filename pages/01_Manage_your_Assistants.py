@@ -172,7 +172,7 @@ if st.session_state['manager'].are_there_assistants():
     # Listing function
     selected_assistant_functions = st.session_state['manager'].llm_helper.get_functions_from_assistant(selected_assistant)
     functions_data_list = get_assistant_data(selected_assistant_functions)
-    selected_assistant_has_code_interpreter = st.session_state['manager'].llm_helper.assistant_has_code_interpreter(selected_assistant)
+    selected_assistant_has_code_interpreter = st.session_state['manager'].llm_helper.assistant_has_code_interpreter(selected_assistant_id)
 
     st.write(content.MANAGE_SELECTED_ASSISTANT_FUNCTIONS)
     for function_data in functions_data_list:

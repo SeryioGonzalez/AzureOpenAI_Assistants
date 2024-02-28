@@ -4,7 +4,7 @@
 MAIN_TITLE_TEXT = "Azure OpenAI Assistants"
 MAIN_ASSISTANT_CHAT_WELCOME = "How can I help you?"
 MAIN_ASSISTANT_SELECT_TEXT = "Select Your Assistant"
-MAIN_ASSISTANT_UPLOAD_DOCUMENT = "Upload a document"
+MAIN_ASSISTANT_UPLOAD_DOCUMENT = "Upload a document for code interpreter"
 MAIN_FILE_UPLOAD_KO = "File upload failed!"
 MAIN_FILE_UPLOAD_OK = "File uploaded to OpenAI successfully!"
 MAIN_NO_ASSISTANT_TEXT = "No Assistants created. Create your first Assistant"

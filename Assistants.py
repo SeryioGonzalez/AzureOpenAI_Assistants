@@ -34,15 +34,15 @@ if st.session_state['manager'].are_there_assistants():
             st.markdown(message["content"])
 
 # DISPLAY - GET FILE INFO
-    # Placeholder. Files not yet supported
-    #uploaded_file = st.file_uploader(content.MAIN_ASSISTANT_UPLOAD_DOCUMENT)
-    uploaded_file = None
-    if uploaded_file is not None:
-        st.session_state['logger'].log("New uploaded file", verbose=VERBOSE)
-        if st.session_state['manager'].upload_file_for_assistant_messages(assistant_id, uploaded_file):
-            st.write(content.MAIN_FILE_UPLOAD_OK)
-        else:
-            st.write(content.MAIN_FILE_UPLOAD_KO)
+    # Code interpreter dependant
+    if st.session_state['manager'].llm_helper.assistant_has_code_interpreter(assistant_id):
+        uploaded_file = st.file_uploader(content.MAIN_ASSISTANT_UPLOAD_DOCUMENT)
+        if uploaded_file is not None:
+            st.session_state['logger'].log("New uploaded file", verbose=VERBOSE)
+            if st.session_state['manager'].upload_file_for_assistant_messages(assistant_id, uploaded_file):
+                st.write(content.MAIN_FILE_UPLOAD_OK)
+            else:
+                st.write(content.MAIN_FILE_UPLOAD_KO)
 
 # DISPLAY - USER PROMPT
     if user_prompt := st.chat_input(content.MAIN_ASSISTANT_CHAT_WELCOME):

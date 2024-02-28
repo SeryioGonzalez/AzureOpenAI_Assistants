@@ -151,7 +151,7 @@ class LLMHelper:
         """To be done."""
         return None
 
-    def create_assistant_thread_run(self, thread_id, assistant_id, run_instructions):
+    def create_assistant_thread_run(self, thread_id, assistant_id):
         """Run Assistant."""
         assistant_data  = self.get_assistant(assistant_id)
         assistant_tools = self._tools_to_json(assistant_data.tools)
@@ -159,7 +159,7 @@ class LLMHelper:
         run = self.llm_client.beta.threads.runs.create(
             thread_id=thread_id,
             assistant_id=assistant_id,
-            instructions=run_instructions,
+            #instructions=run_instructions, #Mind this would override Assistant instructions. use carefully. Need to change the method signature
             tools=assistant_tools
         )
 
@@ -358,13 +358,14 @@ class LLMHelper:
         return file
 
 # OBJECT OPERATIONS
-    def get_functions_from_assistant(self, assistant):
+    def get_functions_from_assistant(self, assistant_instance):
         """Get function from assistant."""
-        tool_functions = [tool for tool in assistant.tools if isinstance(tool, ToolFunction)]
+        tool_functions = [tool for tool in assistant_instance.tools if isinstance(tool, ToolFunction)]
         return tool_functions
 
-    def assistant_has_code_interpreter(self, assistant_instance):
+    def assistant_has_code_interpreter(self, assistant_id):
         """Check if an assistant has code interpreter."""
+        assistant_instance = self.get_assistant(assistant_id)
         tool_code_interpreter = [tool for tool in assistant_instance.tools if isinstance(tool, ToolCodeInterpreter)]
         return len(tool_code_interpreter) > 0
 
