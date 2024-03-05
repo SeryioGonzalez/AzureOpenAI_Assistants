@@ -7,7 +7,6 @@ from utilities.llm_helper           import LLMHelper
 from utilities.observability_helper import ObservabilityHelper
 from utilities.openapi_helper       import OpenAPIHelper
 
-
 class Manager:
     """App manager class."""
 
@@ -186,7 +185,7 @@ class Manager:
 
     def upload_file_for_assistant_messages(self, assistant_id, file_to_upload, verbose=True):
         """Push file to assistants."""
-        local_file_id = file_to_upload['_file_urls']['file_id']
+        local_file_id = file_to_upload.file_id
 
         if self.is_file_already_uploaded(assistant_id, local_file_id):
             self.observability_helper.log("This file already exists. Not uploading Again", verbose)
@@ -199,6 +198,6 @@ class Manager:
             self.track_assistant_file_for_messages(assistant_id, local_file_id, az_oai_assistants_file_id)
 
         else:
-            self.observability_helper.log(f"Uploading file {az_oai_assistants_file_id} failed", verbose)
+            self.observability_helper.log(f"File upload {az_oai_assistants_file_id} failed", verbose)
 
         return upload_success

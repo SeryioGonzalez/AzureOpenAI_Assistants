@@ -12,8 +12,7 @@ from manager import Manager
 
 VERBOSE = True
 
-
-def get_assistant_data(function_list):
+def get_assistant_function_data(function_list):
     """Get function definition."""
     def get_function_definition_dict(function_definition):
         function_defitinion_dict = {}
@@ -44,9 +43,9 @@ def get_file_data(file_list):
     return pd.DataFrame(filtered_file_data)
 
 
-def update_function(function_data):
+def update_function(this_function_data):
     """Update function definition."""
-    assistant_id, function_name = function_data
+    assistant_id, function_name = this_function_data
     key = "function_definition_" + function_name
     spec_data = st.session_state[key]
 
@@ -58,9 +57,9 @@ def update_function(function_data):
         st.session_state['logger'].log("Not a valid function JSON", verbose=VERBOSE)
 
 
-def delete_function(function_data):
+def delete_function(this_function_data):
     """Delete function definition."""
-    assistant_id, function_name = function_data
+    assistant_id, function_name = this_function_data
     st.session_state['manager'].llm_helper.delete_assistant_function(assistant_id, function_name)
 
 
@@ -68,7 +67,9 @@ def update_instructions(assistant_data):
     """Update instructions."""
     assistant_id, previous_instructions = assistant_data
     if previous_instructions != st.session_state['updated_instructions']:
-        st.session_state['logger'].log(f"For assistant {assistant_id} update instructions {st.session_state['updated_instructions']} from {previous_instructions}", verbose=VERBOSE)
+        st.session_state['logger'].log(f'''
+                                       For assistant {assistant_id} update instructions {st.session_state['updated_instructions']} 
+                                       from {previous_instructions}''', verbose=VERBOSE)
         st.session_state['manager'].llm_helper.update_assistant_instructions(assistant_id, st.session_state['updated_instructions'])
     else:
         st.session_state['logger'].log(f"No updated instructions for assistant {assistant_id}", verbose=VERBOSE)
@@ -85,6 +86,12 @@ def delete_assistant(assistant_id):
     st.session_state['logger'].log(f"Deleting {assistant_id} ", verbose=VERBOSE)
     st.session_state['manager'].llm_helper.delete_assistant(assistant_id)
 
+def update_conv_starters(assistant_id, conv_starter_id):
+    """Update Conv Starter."""
+    key=f"update_conv_starters_{conv_starter_id}"
+    conv_starter_text =  st.session_state[key]
+
+    st.session_state['manager'].llm_helper.update_conv_starter(assistant_id, conv_starter_id, conv_starter_text)
 
 if 'session_id' not in st.session_state:
     ctx = get_script_run_ctx()
@@ -130,26 +137,26 @@ if st.session_state['manager'].are_there_assistants():
             st.error(content.MANAGE_CREATE_ASSISTANT_NO_NAME_OR_INSTRUCTIONS)
 
 # Selected Assistant
-    selected_assistant_name  = st.selectbox(content.MANAGE_ASSISTANT_SELECT_TEXT, assistant_name_list)
-    selected_assistant_index = assistant_name_list.index(selected_assistant_name)
-    selected_assistant_id = assistant_id_list[selected_assistant_index]
-    selected_assistant = st.session_state['manager'].get_assistant(selected_assistant_id)
+    this_assistant_name  = st.selectbox(content.MANAGE_ASSISTANT_SELECT_TEXT, assistant_name_list)
+    this_assistant_index = assistant_name_list.index(this_assistant_name)
+    this_assistant_id = assistant_id_list[this_assistant_index]
+    this_assistant = st.session_state['manager'].get_assistant(this_assistant_id)
 
-    selected_assistant_files = st.session_state['manager'].llm_helper.get_files_from_assistant(selected_assistant)
+    this_assistant_conv_starters = st.session_state['manager'].llm_helper.get_assistant_conversation_starter_values(this_assistant)
+    this_assistant_files = st.session_state['manager'].llm_helper.get_files_from_assistant(this_assistant)
 
     # Selected Assistant info
-    assistant_description  = selected_assistant.description
-    assistant_instructions = selected_assistant.instructions
-    # assistant_conversation_starters = selected_assistant.metadata
+    assistant_description  = this_assistant.description
+    assistant_instructions = this_assistant.instructions
 
 # DISPLAY - ASSISTANT DISPLAY
-    st.write(content.MANAGE_SELECTED_ASSISTANT_ID + f": {selected_assistant_id}")
-    st.button(content.MANAGE_DELETE_ASSISTANT, on_click=delete_assistant, args=(selected_assistant_id,))
+    st.write(content.MANAGE_SELECTED_ASSISTANT_ID + f": {this_assistant_id}")
+    st.button(content.MANAGE_DELETE_ASSISTANT, on_click=delete_assistant, args=(this_assistant_id,))
 # DISPLAY - ASSISTANT Instructions
     st.text_area(content.MANAGE_SELECTED_ASSISTANT_INSTRUCTIONS, assistant_instructions, key="updated_instructions")
-    st.button(content.MANAGE_UPDATE_ASSISTANT_INSTRUCTIONS, on_click=update_instructions, args=((selected_assistant_id, assistant_instructions),))
+    st.button(content.MANAGE_UPDATE_ASSISTANT_INSTRUCTIONS, on_click=update_instructions, args=((this_assistant_id, assistant_instructions),))
 # DISPLAY - ASSISTANT TOOLS TITLE
-    st.markdown(f"<div style='text-align: center;'>{content.MANAGE_SELECTED_ASSISTANT_TOOLS}</div>", unsafe_allow_html=True)
+    st.markdown(f"<DIV style='text-align: center;'><H3>{content.MANAGE_SELECTED_ASSISTANT_TOOLS}</H3></DIV>", unsafe_allow_html=True)
 # DISPLAY - ASSISTANT Functions
     # Adding a function
     with st.form("add_action_form"):
@@ -161,7 +168,7 @@ if st.session_state['manager'].are_there_assistants():
         if OpenAPIHelper.validate_spec_json(new_spec_body):
             openai_functions = OpenAPIHelper.extract_openai_functions_from_spec(new_spec_body)
             for openai_function in openai_functions:
-                st.session_state['manager'].llm_helper.create_assistant_function(selected_assistant_id, openai_function)
+                st.session_state['manager'].llm_helper.create_assistant_function(this_assistant_id, openai_function)
                 st.session_state['logger'].log("New function added - refreshing", verbose=VERBOSE)
             st.rerun()
         else:
@@ -170,30 +177,57 @@ if st.session_state['manager'].are_there_assistants():
 
     st.session_state['logger'].log("Listing functions", verbose=VERBOSE)
     # Listing function
-    selected_assistant_functions = st.session_state['manager'].llm_helper.get_functions_from_assistant(selected_assistant)
-    functions_data_list = get_assistant_data(selected_assistant_functions)
-    selected_assistant_has_code_interpreter = st.session_state['manager'].llm_helper.assistant_has_code_interpreter(selected_assistant_id)
+    this_assistant_functions = st.session_state['manager'].llm_helper.get_functions_from_assistant(this_assistant)
+    functions_data_list = get_assistant_function_data(this_assistant_functions)
+    this_assistant_has_code_interpreter = st.session_state['manager'].llm_helper.assistant_has_code_interpreter(this_assistant_id)
 
     st.write(content.MANAGE_SELECTED_ASSISTANT_FUNCTIONS)
     for function_data in functions_data_list:
         with st.expander(function_data['name']):
-            function_body = st.text_area(content.MANAGE_ASSISTANT_ACTION_BODY, key="function_definition_" + function_data['name'], value=function_data['definition'], height=400)
+            function_body = st.text_area(content.MANAGE_ASSISTANT_ACTION_BODY,
+                                         key="function_definition_" + function_data['name'],
+                                         value=function_data['definition'], height=400)
             # Keys
-            st.button(content.MANAGE_ASSISTANT_ACTION_UPDATE_BUTTON, key="update_" + function_data['name'], on_click=update_function, args=(((selected_assistant_id, function_data['name']),)))
-            st.button(content.MANAGE_ASSISTANT_ACTION_DELETE_BUTTON, key="delete_" + function_data['name'], on_click=delete_function, args=(((selected_assistant_id, function_data['name']),)))
+            st.button(content.MANAGE_ASSISTANT_ACTION_UPDATE_BUTTON,
+                      key="update_" + function_data['name'],
+                      on_click=update_function,
+                      args=(((this_assistant_id, function_data['name']),)))
+            st.button(content.MANAGE_ASSISTANT_ACTION_DELETE_BUTTON,
+                      key="delete_" + function_data['name'],
+                      on_click=delete_function,
+                      args=(((this_assistant_id, function_data['name']),)))
 
 # DISPLAY - ASSISTANT OTHER TOOLS
     st.write(content.MANAGE_SELECTED_ASSISTANT_CAPABILITIES)
-    st.toggle(content.MANAGE_SELECTED_ASSISTANT_CAPABILITIES_CODE_INTERPRETER, on_change=update_code_interpreter, key="code_interpreter", args=(selected_assistant_id,),  value=selected_assistant_has_code_interpreter)
+    st.toggle(content.MANAGE_SELECTED_ASSISTANT_CAPABILITIES_CODE_INTERPRETER,
+              on_change=update_code_interpreter, key="code_interpreter",
+              args=(this_assistant_id,),
+              value=this_assistant_has_code_interpreter)
 # DISPLAY - ASSISTANT files
 
-    # st.markdown(f"<div style='text-align: center;'>{content.MANAGE_SELECTED_ASSISTANT_FILES}</div>", unsafe_allow_html=True)
+    # st.markdown(f"<DIV style='text-align: center;'><H3>{content.MANAGE_SELECTED_ASSISTANT_FILES}</H3></DIV>", unsafe_allow_html=True)
 
-    # if len(selected_assistant_files) > 0:
-    #     file_data_list = get_file_data(selected_assistant_files)
+    # if len(this_assistant_files) > 0:
+    #     file_data_list = get_file_data(this_assistant_files)
     #     st.write(file_data_list)
     # else:
     #     st.write(content.MANAGE_NO_FILE_MESSAGE)
     #
 else:
     st.write(content.MAIN_NO_ASSISTANT_TEXT)
+
+st.markdown(f"<DIV style='text-align: center;'><H3>{content.MANAGE_SELECTED_ASSISTANT_CONV_STARTERS}</H3></DIV>", unsafe_allow_html=True)
+
+st.text_input(content.MANAGE_SELECTED_ASSISTANT_NEW_CONV_STARTER, 
+            key="update_conv_starters_new",
+            on_change=update_conv_starters,
+            args=(this_assistant_id, "new"))
+
+if len(this_assistant_conv_starters) > 0:
+    st.markdown(f"<DIV style='text-align: center;'><H4>{content.MANAGE_SELECTED_ASSISTANT_EXISTING_CONV_STARTERS}</H4></DIV>", unsafe_allow_html=True)
+    for index, conv_starter in enumerate(this_assistant_conv_starters):
+        if conv_starter != "":
+            st.text_input(content.MANAGE_SELECTED_ASSISTANT_EXISTING_CONV_STARTER_LABEL, conv_starter,
+                        key="update_conv_starters_" + str(index),
+                        on_change=update_conv_starters,
+                        args=(this_assistant_id, index))
