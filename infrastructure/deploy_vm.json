@@ -19,9 +19,7 @@
         "nic_name":      "[concat(parameters('vm_name'), '-nic')]",
         "nsg_name":      "[concat(parameters('vm_name'), '-nsg')]",
         "publicIp_name": "[concat(parameters('vm_name'), '-public-ip')]",        
-        "vnet_name":     "[concat(parameters('vm_name'), '-vnet')]",        
-
-
+        "vnet_name":     "[concat(parameters('vm_name'), '-vnet')]"
     },
     "resources": [
         {
