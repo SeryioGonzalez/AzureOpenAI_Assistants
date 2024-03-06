@@ -1,0 +1,15 @@
+[Unit]
+Description=Streamlit App Service
+After=network.target
+
+[Service]
+User=your_username
+Group=your_group
+WorkingDirectory=/home/streamlit/AzureOpenAI_Assistants
+ExecStart=/home/streamlit/AzureOpenAI_Assistants/streamlit run assistants.py --server.port 8501
+
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

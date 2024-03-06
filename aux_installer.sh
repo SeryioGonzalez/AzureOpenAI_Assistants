@@ -9,3 +9,4 @@ pip install python-dotenv==1.0.0
 pip install openai==1.12.0
 
 git clone https://github.com/SeryioGonzalez/AzureOpenAI_Assistants.git /home/streamlit/AzureOpenAI_Assistants
+

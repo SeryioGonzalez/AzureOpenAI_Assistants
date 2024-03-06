@@ -12,14 +12,20 @@
             "type": "String"
         },
         "vm_password": {
-            "type": "secureString"
+            "defaultValue": "Sergio1sergio2",
+            "type": "String"
+        },
+        "customData": {
+            "type": "string",
+            "defaultValue": "git clone https://github.com/SeryioGonzalez/AzureOpenAI_Assistants.git; cd AzureOpenAI_Assistants; ./aux_installer.sh"
         }
+
     },
     "variables": {
-        "nic_name":      "[concat(parameters('vm_name'), '-nic')]",
-        "nsg_name":      "[concat(parameters('vm_name'), '-nsg')]",
-        "publicIp_name": "[concat(parameters('vm_name'), '-public-ip')]",        
-        "vnet_name":     "[concat(parameters('vm_name'), '-vnet')]"
+        "nic_name":           "[concat(parameters('vm_name'), '-nic')]",
+        "nsg_name":           "[concat(parameters('vm_name'), '-nsg')]",
+        "publicIp_name":      "[concat(parameters('vm_name'), '-public-ip')]",        
+        "vnet_name":          "[concat(parameters('vm_name'), '-vnet')]"
     },
     "resources": [
         {
@@ -41,6 +47,25 @@
                             "destinationAddressPrefix": "*",
                             "access": "Allow",
                             "priority": 310,
+                            "direction": "Inbound",
+                            "sourcePortRanges": [],
+                            "destinationPortRanges": [],
+                            "sourceAddressPrefixes": [],
+                            "destinationAddressPrefixes": []
+                        }
+                    },
+                    {
+                        "name": "AllowAnyCustom22Inbound",
+                        "id": "[resourceId('Microsoft.Network/networkSecurityGroups/securityRules', variables('nsg_name'), 'AllowAnyCustom22Inbound')]",
+                        "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+                        "properties": {
+                            "protocol": "TCP",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "22",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 320,
                             "direction": "Inbound",
                             "sourcePortRanges": [],
                             "destinationPortRanges": [],
@@ -98,7 +123,7 @@
         {
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "2023-03-01",
-            "name": "[variables('vm_name')]",
+            "name": "[parameters('vm_name')]",
             "location": "[resourceGroup().location]",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/networkInterfaces', variables('nic_name'))]"
@@ -106,9 +131,6 @@
             "properties": {
                 "hardwareProfile": {
                     "vmSize": "Standard_DS1_v2"
-                },
-                "additionalCapabilities": {
-                    "hibernationEnabled": false
                 },
                 "storageProfile": {
                     "imageReference": {
@@ -119,12 +141,11 @@
                     },
                     "osDisk": {
                         "osType": "Linux",
-                        "name": "[concat(variables('vm_name'), '_disk1')]",
+                        "name": "[concat(parameters('vm_name'), '_disk1')]",
                         "createOption": "FromImage",
                         "caching": "ReadWrite",
                         "managedDisk": {
-                            "storageAccountType": "Premium_LRS",
-                            "id": "[resourceId('Microsoft.Compute/disks', concat(variables('vm_name'), '_disk1'))]"
+                            "storageAccountType": "Premium_LRS"
                         },
                         "deleteOption": "Delete",
                         "diskSizeGB": 30
@@ -135,29 +156,11 @@
                 "osProfile": {
                     "computerName": "[parameters('vm_name')]",
                     "adminUsername": "[parameters('vm_user')]",
+                    "adminPassword": "[parameters('vm_password')]",
+                    "customData": "[base64(parameters('customData'))]",
                     "linuxConfiguration": {
-                        "disablePasswordAuthentication": false,
-                        "provisionVMAgent": true,
-                        "patchSettings": {
-                            "patchMode": "AutomaticByPlatform",
-                            "automaticByPlatformSettings": {
-                                "rebootSetting": "IfRequired",
-                                "bypassPlatformSafetyChecksOnUserSchedule": false
-                            },
-                            "assessmentMode": "ImageDefault"
-                        },
-                        "enableVMAgentPlatformUpdates": false
-                    },
-                    "secrets": [],
-                    "allowExtensionOperations": true,
-                    "requireGuestProvisionSignal": true
-                },
-                "securityProfile": {
-                    "uefiSettings": {
-                        "secureBootEnabled": true,
-                        "vTpmEnabled": true
-                    },
-                    "securityType": "TrustedLaunch"
+                        "disablePasswordAuthentication": false
+                    }
                 },
                 "networkProfile": {
                     "networkInterfaces": [
@@ -168,34 +171,7 @@
                             }
                         }
                     ]
-                },
-                "diagnosticsProfile": {
-                    "bootDiagnostics": {
-                        "enabled": true
-                    }
                 }
-            }
-        },
-        {
-            "type": "Microsoft.Network/networkSecurityGroups/securityRules",
-            "apiVersion": "2023-09-01",
-            "name": "[concat(variables('nsg_name'), '/AllowAnyCustom8501Inbound')]",
-            "dependsOn": [
-                "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsg_name'))]"
-            ],
-            "properties": {
-                "protocol": "TCP",
-                "sourcePortRange": "*",
-                "destinationPortRange": "8501",
-                "sourceAddressPrefix": "*",
-                "destinationAddressPrefix": "*",
-                "access": "Allow",
-                "priority": 310,
-                "direction": "Inbound",
-                "sourcePortRanges": [],
-                "destinationPortRanges": [],
-                "sourceAddressPrefixes": [],
-                "destinationAddressPrefixes": []
             }
         },
         {
@@ -261,6 +237,27 @@
                 "auxiliaryMode": "None",
                 "auxiliarySku": "None"
             }
-        }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "apiVersion": "2023-09-01",
+            "name": "[concat(parameters('vm_name'), '/initscript')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+              "publisher": "Microsoft.Azure.Extensions",
+              "type": "CustomScript",
+              "typeHandlerVersion": "2.0",
+              "autoUpgradeMinorVersion": true,
+              "settings": {
+                "fileUris": [
+                  "https://raw.githubusercontent.com/SeryioGonzalez/AzureOpenAI_Assistants/main/aux_installer.sh"
+                ],
+                "commandToExecute": "bash aux_installer.sh"
+              }
+            },
+            "dependsOn": [
+              "[resourceId('Microsoft.Compute/virtualMachines', parameters('vm_name'))]"
+            ]
+          }
     ]
 }
