@@ -7,6 +7,7 @@ from utilities.observability_helper import ObservabilityHelper
 
 class OpenAPIHelper:
     """This class abstract OpenAPI operations."""
+    
 # VARIABLES
     VERBOSE = False
     SPEC_FOLDER = "assistant_data/"
