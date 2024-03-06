@@ -106,133 +106,136 @@ st.session_state['logger'].log("Configuring assistants", verbose=VERBOSE)
 
 # DISPLAY - TITLE
 st.title(content.MANAGE_TITLE_TEXT)
+openai_status = st.session_state['manager'].llm_helper.check_openai_endpoint_from_settings()
+if openai_status:
+        
+    # DISPLAY - CREATE ASSISTANT FORM
+    with st.form("add_assistant_form"):
+        with st.expander(content.MANAGE_CREATE_ASSISTANT):
+            new_assistant_name         = st.text_input(content.MANAGE_CREATE_ASSISTANT_NAME, key="new_assistant_name")
+            new_assistant_instructions = st.text_area(content.MANAGE_CREATE_ASSISTANT_INSTRUCTIONS, key="new_assistant_instructions")
+            new_assistant_submit       = st.form_submit_button(content.MANAGE_CREATE_ASSISTANT_SUBMIT)
 
-# DISPLAY - CREATE ASSISTANT FORM
-with st.form("add_assistant_form"):
-    with st.expander(content.MANAGE_CREATE_ASSISTANT):
-        new_assistant_name         = st.text_input(content.MANAGE_CREATE_ASSISTANT_NAME, key="new_assistant_name")
-        new_assistant_instructions = st.text_area(content.MANAGE_CREATE_ASSISTANT_INSTRUCTIONS, key="new_assistant_instructions")
-        new_assistant_submit       = st.form_submit_button(content.MANAGE_CREATE_ASSISTANT_SUBMIT)
+        # New function submitted
+    if new_assistant_submit:
+        if new_assistant_name != "" and new_assistant_instructions != "":
+            if st.session_state['manager'].llm_helper.is_duplicated_assistant(new_assistant_name) is False:
+                st.session_state['manager'].llm_helper.create_assistant(new_assistant_name, new_assistant_instructions)
+                st.session_state['logger'].log(f"New assistant {new_assistant_name} created - refreshing", verbose=VERBOSE)
+                st.rerun()
+            else:
+                st.session_state['logger'].log(f"Duplicated assistant {new_assistant_name}", verbose=VERBOSE)
+                st.error(content.MANAGE_CREATE_ASSISTANT_DUPLICATED)
 
-    # New function submitted
-if new_assistant_submit:
-    if new_assistant_name != "" and new_assistant_instructions != "":
-        if st.session_state['manager'].llm_helper.is_duplicated_assistant(new_assistant_name) is False:
-            st.session_state['manager'].llm_helper.create_assistant(new_assistant_name, new_assistant_instructions)
-            st.session_state['logger'].log(f"New assistant {new_assistant_name} created - refreshing", verbose=VERBOSE)
-            st.rerun()
         else:
-            st.session_state['logger'].log(f"Duplicated assistant {new_assistant_name}", verbose=VERBOSE)
-            st.error(content.MANAGE_CREATE_ASSISTANT_DUPLICATED)
+            st.session_state['logger'].log(f"Name {new_assistant_name} or instructions {new_assistant_instructions} not specified", verbose=VERBOSE)
+            st.error(content.MANAGE_CREATE_ASSISTANT_NO_NAME_OR_INSTRUCTIONS)
 
+    # DISPLAY - ASSISTANT PANEL
+    assistant_list = st.session_state['manager'].llm_helper.get_assistants()
+    if len(assistant_list) > 0:
+        # All Assitants
+        assistant_id_name_list = [(assistant.id, assistant.name) for assistant in assistant_list]
+        assistant_id_list   = [assistant[0] for assistant in assistant_id_name_list]
+        assistant_name_list = [assistant[1] for assistant in assistant_id_name_list]
+    # Selected Assistant
+        this_assistant_name  = st.selectbox(content.MANAGE_ASSISTANT_SELECT_TEXT, assistant_name_list)
+        this_assistant_index = assistant_name_list.index(this_assistant_name)
+        this_assistant_id = assistant_id_list[this_assistant_index]
+        this_assistant = st.session_state['manager'].llm_helper.get_assistant(this_assistant_id)
+
+        this_assistant_conv_starters = st.session_state['manager'].llm_helper.get_assistant_conversation_starter_values(this_assistant)
+        this_assistant_files = st.session_state['manager'].llm_helper.get_files_from_assistant(this_assistant)
+
+        # Selected Assistant info
+        assistant_description  = this_assistant.description
+        assistant_instructions = this_assistant.instructions
+
+    # DISPLAY - ASSISTANT DISPLAY
+        st.write(content.MANAGE_SELECTED_ASSISTANT_ID + f": {this_assistant_id}")
+        st.button(content.MANAGE_DELETE_ASSISTANT, on_click=delete_assistant, args=(this_assistant_id,))
+    # DISPLAY - ASSISTANT Instructions
+        st.text_area(content.MANAGE_SELECTED_ASSISTANT_INSTRUCTIONS, assistant_instructions, key="updated_instructions")
+        st.button(content.MANAGE_UPDATE_ASSISTANT_INSTRUCTIONS, on_click=update_instructions, args=((this_assistant_id, assistant_instructions),))
+    # DISPLAY - ASSISTANT TOOLS TITLE
+        st.markdown(f"<DIV style='text-align: center;'><H3>{content.MANAGE_SELECTED_ASSISTANT_TOOLS}</H3></DIV>", unsafe_allow_html=True)
+    # DISPLAY - ASSISTANT Functions
+        # Adding a function
+        with st.form("add_action_form"):
+            with st.expander(content.MANAGE_ASSISTANT_ACTION_ADD_EXPANDER):
+                new_spec_body   = st.text_area(content.MANAGE_ASSISTANT_ACTION_ADD_BODY, key="manage_text_new_spec", height=400)
+                new_spec_submit = st.form_submit_button(content.MANAGE_ASSISTANT_ACTION_ADD_BUTTON)
+        # New function submitted
+        if new_spec_submit:
+            if OpenAPIHelper.validate_spec_json(new_spec_body):
+                st.session_state['logger'].log("Valid Spec", verbose=VERBOSE)
+                OpenAPIHelper.save_openapi_spec(this_assistant_id, new_spec_body)
+                openai_functions = OpenAPIHelper.extract_openai_functions_from_spec(new_spec_body)
+                st.session_state['logger'].log(f"Extracted functions {openai_functions}", verbose=VERBOSE)
+                for openai_function in openai_functions:
+                    st.session_state['manager'].llm_helper.create_assistant_function(this_assistant_id, openai_function)
+                    st.session_state['logger'].log("New function added - refreshing", verbose=VERBOSE)
+                st.rerun()
+            else:
+                st.error(content.MANAGE_ASSISTANT_NEW_SPEC_NOT_VALID)
+                st.session_state['logger'].log("Not a valid OpenAPI Spec", verbose=VERBOSE)
+
+        st.session_state['logger'].log("Listing functions", verbose=VERBOSE)
+        # Listing function fro API
+        this_assistant_functions = st.session_state['manager'].llm_helper.get_functions_from_assistant(this_assistant)
+        functions_data_list = get_assistant_function_data(this_assistant_functions)
+        this_assistant_has_code_interpreter = st.session_state['manager'].llm_helper.assistant_has_code_interpreter(this_assistant_id)
+
+        st.markdown(f"<DIV style='text-align: center;'><H4>{content.MANAGE_SELECTED_ASSISTANT_FUNCTIONS}</H4></DIV>", unsafe_allow_html=True)
+        
+        for function_data in functions_data_list:
+            with st.expander(function_data['name']):
+                function_body = st.text_area(content.MANAGE_ASSISTANT_ACTION_BODY,
+                                            key="function_definition_" + function_data['name'],
+                                            value=function_data['definition'], height=400)
+                # Keys
+                st.button(content.MANAGE_ASSISTANT_ACTION_UPDATE_BUTTON,
+                        key="update_" + function_data['name'],
+                        on_click=update_function,
+                        args=(((this_assistant_id, function_data['name']),)))
+                st.button(content.MANAGE_ASSISTANT_ACTION_DELETE_BUTTON,
+                        key="delete_" + function_data['name'],
+                        on_click=delete_function,
+                        args=(((this_assistant_id, function_data['name']),)))
+
+    # DISPLAY - ASSISTANT OTHER TOOLS
+        st.write(content.MANAGE_SELECTED_ASSISTANT_CAPABILITIES)
+        st.toggle(content.MANAGE_SELECTED_ASSISTANT_CAPABILITIES_CODE_INTERPRETER,
+                on_change=update_code_interpreter, key="code_interpreter",
+                args=(this_assistant_id,),
+                value=this_assistant_has_code_interpreter)
+        st.markdown(f"<DIV style='text-align: center;'><H3>{content.MANAGE_SELECTED_ASSISTANT_CONV_STARTERS}</H3></DIV>", unsafe_allow_html=True)
+
+        st.text_input(content.MANAGE_SELECTED_ASSISTANT_NEW_CONV_STARTER,
+                    key="update_conv_starters_new",
+                    on_change=update_conv_starters,
+                    args=(this_assistant_id, "new"))
+
+        if len(this_assistant_conv_starters) > 0:
+            st.markdown(f"<DIV style='text-align: center;'><H4>{content.MANAGE_SELECTED_ASSISTANT_EXISTING_CONV_STARTERS}</H4></DIV>", unsafe_allow_html=True)
+            for index, conv_starter in enumerate(this_assistant_conv_starters):
+                if conv_starter != "":
+                    st.text_input(content.MANAGE_SELECTED_ASSISTANT_EXISTING_CONV_STARTER_LABEL, conv_starter,
+                                key="update_conv_starters_" + str(index),
+                                on_change=update_conv_starters,
+                                args=(this_assistant_id, index))
+    # DISPLAY - ASSISTANT files
+
+        # st.markdown(f"<DIV style='text-align: center;'><H3>{content.MANAGE_SELECTED_ASSISTANT_FILES}</H3></DIV>", unsafe_allow_html=True)
+
+        # if len(this_assistant_files) > 0:
+        #     file_data_list = get_file_data(this_assistant_files)
+        #     st.write(file_data_list)
+        # else:
+        #     st.write(content.MANAGE_NO_FILE_MESSAGE)
+        #
     else:
-        st.session_state['logger'].log(f"Name {new_assistant_name} or instructions {new_assistant_instructions} not specified", verbose=VERBOSE)
-        st.error(content.MANAGE_CREATE_ASSISTANT_NO_NAME_OR_INSTRUCTIONS)
-
-# DISPLAY - ASSISTANT PANEL
-assistant_list = st.session_state['manager'].llm_helper.get_assistants()
-if len(assistant_list) > 0:
-    # All Assitants
-    assistant_id_name_list = [(assistant.id, assistant.name) for assistant in assistant_list]
-    assistant_id_list   = [assistant[0] for assistant in assistant_id_name_list]
-    assistant_name_list = [assistant[1] for assistant in assistant_id_name_list]
-# Selected Assistant
-    this_assistant_name  = st.selectbox(content.MANAGE_ASSISTANT_SELECT_TEXT, assistant_name_list)
-    this_assistant_index = assistant_name_list.index(this_assistant_name)
-    this_assistant_id = assistant_id_list[this_assistant_index]
-    this_assistant = st.session_state['manager'].llm_helper.get_assistant(this_assistant_id)
-
-    this_assistant_conv_starters = st.session_state['manager'].llm_helper.get_assistant_conversation_starter_values(this_assistant)
-    this_assistant_files = st.session_state['manager'].llm_helper.get_files_from_assistant(this_assistant)
-
-    # Selected Assistant info
-    assistant_description  = this_assistant.description
-    assistant_instructions = this_assistant.instructions
-
-# DISPLAY - ASSISTANT DISPLAY
-    st.write(content.MANAGE_SELECTED_ASSISTANT_ID + f": {this_assistant_id}")
-    st.button(content.MANAGE_DELETE_ASSISTANT, on_click=delete_assistant, args=(this_assistant_id,))
-# DISPLAY - ASSISTANT Instructions
-    st.text_area(content.MANAGE_SELECTED_ASSISTANT_INSTRUCTIONS, assistant_instructions, key="updated_instructions")
-    st.button(content.MANAGE_UPDATE_ASSISTANT_INSTRUCTIONS, on_click=update_instructions, args=((this_assistant_id, assistant_instructions),))
-# DISPLAY - ASSISTANT TOOLS TITLE
-    st.markdown(f"<DIV style='text-align: center;'><H3>{content.MANAGE_SELECTED_ASSISTANT_TOOLS}</H3></DIV>", unsafe_allow_html=True)
-# DISPLAY - ASSISTANT Functions
-    # Adding a function
-    with st.form("add_action_form"):
-        with st.expander(content.MANAGE_ASSISTANT_ACTION_ADD_EXPANDER):
-            new_spec_body   = st.text_area(content.MANAGE_ASSISTANT_ACTION_ADD_BODY, key="manage_text_new_spec", height=400)
-            new_spec_submit = st.form_submit_button(content.MANAGE_ASSISTANT_ACTION_ADD_BUTTON)
-    # New function submitted
-    if new_spec_submit:
-        if OpenAPIHelper.validate_spec_json(new_spec_body):
-            st.session_state['logger'].log("Valid Spec", verbose=VERBOSE)
-            OpenAPIHelper.save_openapi_spec(this_assistant_id, new_spec_body)
-            openai_functions = OpenAPIHelper.extract_openai_functions_from_spec(new_spec_body)
-            st.session_state['logger'].log(f"Extracted functions {openai_functions}", verbose=VERBOSE)
-            for openai_function in openai_functions:
-                st.session_state['manager'].llm_helper.create_assistant_function(this_assistant_id, openai_function)
-                st.session_state['logger'].log("New function added - refreshing", verbose=VERBOSE)
-            st.rerun()
-        else:
-            st.error(content.MANAGE_ASSISTANT_NEW_SPEC_NOT_VALID)
-            st.session_state['logger'].log("Not a valid OpenAPI Spec", verbose=VERBOSE)
-
-    st.session_state['logger'].log("Listing functions", verbose=VERBOSE)
-    # Listing function fro API
-    this_assistant_functions = st.session_state['manager'].llm_helper.get_functions_from_assistant(this_assistant)
-    functions_data_list = get_assistant_function_data(this_assistant_functions)
-    this_assistant_has_code_interpreter = st.session_state['manager'].llm_helper.assistant_has_code_interpreter(this_assistant_id)
-
-    st.markdown(f"<DIV style='text-align: center;'><H4>{content.MANAGE_SELECTED_ASSISTANT_FUNCTIONS}</H4></DIV>", unsafe_allow_html=True)
-    
-    for function_data in functions_data_list:
-        with st.expander(function_data['name']):
-            function_body = st.text_area(content.MANAGE_ASSISTANT_ACTION_BODY,
-                                         key="function_definition_" + function_data['name'],
-                                         value=function_data['definition'], height=400)
-            # Keys
-            st.button(content.MANAGE_ASSISTANT_ACTION_UPDATE_BUTTON,
-                      key="update_" + function_data['name'],
-                      on_click=update_function,
-                      args=(((this_assistant_id, function_data['name']),)))
-            st.button(content.MANAGE_ASSISTANT_ACTION_DELETE_BUTTON,
-                      key="delete_" + function_data['name'],
-                      on_click=delete_function,
-                      args=(((this_assistant_id, function_data['name']),)))
-
-# DISPLAY - ASSISTANT OTHER TOOLS
-    st.write(content.MANAGE_SELECTED_ASSISTANT_CAPABILITIES)
-    st.toggle(content.MANAGE_SELECTED_ASSISTANT_CAPABILITIES_CODE_INTERPRETER,
-              on_change=update_code_interpreter, key="code_interpreter",
-              args=(this_assistant_id,),
-              value=this_assistant_has_code_interpreter)
-    st.markdown(f"<DIV style='text-align: center;'><H3>{content.MANAGE_SELECTED_ASSISTANT_CONV_STARTERS}</H3></DIV>", unsafe_allow_html=True)
-
-    st.text_input(content.MANAGE_SELECTED_ASSISTANT_NEW_CONV_STARTER,
-                key="update_conv_starters_new",
-                on_change=update_conv_starters,
-                args=(this_assistant_id, "new"))
-
-    if len(this_assistant_conv_starters) > 0:
-        st.markdown(f"<DIV style='text-align: center;'><H4>{content.MANAGE_SELECTED_ASSISTANT_EXISTING_CONV_STARTERS}</H4></DIV>", unsafe_allow_html=True)
-        for index, conv_starter in enumerate(this_assistant_conv_starters):
-            if conv_starter != "":
-                st.text_input(content.MANAGE_SELECTED_ASSISTANT_EXISTING_CONV_STARTER_LABEL, conv_starter,
-                            key="update_conv_starters_" + str(index),
-                            on_change=update_conv_starters,
-                            args=(this_assistant_id, index))
-# DISPLAY - ASSISTANT files
-
-    # st.markdown(f"<DIV style='text-align: center;'><H3>{content.MANAGE_SELECTED_ASSISTANT_FILES}</H3></DIV>", unsafe_allow_html=True)
-
-    # if len(this_assistant_files) > 0:
-    #     file_data_list = get_file_data(this_assistant_files)
-    #     st.write(file_data_list)
-    # else:
-    #     st.write(content.MANAGE_NO_FILE_MESSAGE)
-    #
+        st.markdown(f"<DIV style='text-align: center;'><H3>{content.MAIN_NO_ASSISTANT_TEXT}</H3></DIV>", unsafe_allow_html=True)
 else:
-    st.markdown(f"<DIV style='text-align: center;'><H3>{content.MAIN_NO_ASSISTANT_TEXT}</H3></DIV>", unsafe_allow_html=True)
-
+    st.markdown(f"<DIV style='color: red;'><H2>{content.MAIN_NO_AZ_OPEN_AI_CONNECTION}</H2></DIV>", unsafe_allow_html=True)
 

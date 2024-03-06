@@ -9,6 +9,7 @@ MAIN_FILE_UPLOAD_KO = "File upload failed!"
 MAIN_FILE_UPLOAD_OK = "File uploaded to OpenAI successfully!"
 MAIN_ASSISTANT_CONV_STARTERS = "Suggested Conversation Starters"
 MAIN_NO_ASSISTANT_TEXT = "No Assistants created. Create your first Assistant"
+MAIN_NO_AZ_OPEN_AI_CONNECTION = "No Connection to Azure OpenAI. Configure Azure Service settings"
 
 # ASSISTANT MANAGEMENT PAGE
 MANAGE_TITLE_TEXT = "Manage your Azure OpenAI Assistants"

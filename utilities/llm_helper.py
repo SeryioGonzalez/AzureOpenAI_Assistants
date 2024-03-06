@@ -21,7 +21,7 @@ class LLMHelper:
 
     def __init__(self):
         """Initialize the LLM Helper."""
-        self.env_helper: EnvHelper = EnvHelper()
+        self.env_helper = EnvHelper()
         self.observability_helper = ObservabilityHelper()
         self.llm_client = AzureOpenAI(
             azure_endpoint=self.env_helper.OPENAI_API_BASE,
@@ -32,6 +32,7 @@ class LLMHelper:
         self.verbose = True
 
     def update_env_related_attributes(self):
+        self.env_helper = EnvHelper()
         self.llm_client = AzureOpenAI(
             azure_endpoint=self.env_helper.OPENAI_API_BASE,
             api_key=self.env_helper.OPENAI_API_KEY,
@@ -388,6 +389,18 @@ class LLMHelper:
 
         return completion_text
 
+    def check_openai_endpoint_from_settings(self):
+        """Check OpenAI endpoint."""
+        try:
+            self.llm_client.chat.completions.create(
+                model=self.openai_deployment,
+                messages=[{"role": "assistant", "content": "ping"}]
+            )
+            return True
+        except:
+            return False
+
+
     def check_openai_endpoint(self, az_openai_service_endpoint, az_openai_service_key, az_openai_service_deployment, az_openai_api_version):
         """Check OpenAI endpoint."""
         llm_client = AzureOpenAI(
@@ -435,4 +448,5 @@ class LLMHelper:
 
 if __name__ == '__main__':
     llm_helper = LLMHelper()
-    llm_helper.delete_all_files()
+    status = llm_helper.check_openai_endpoint_from_settings()
+    print(status)

@@ -27,6 +27,7 @@ def on_change_aoai_resource_name():
     """Change OpenAI Config. API Endopint."""
     #st.session_state['manager'].env_helper.AZURE_OPENAI_RESOURCE_NAME = st.session_state['aoai_resource_name']
     st.session_state['manager'].update_env_variable("AZURE_OPENAI_RESOURCE_NAME", st.session_state['aoai_resource_name'])
+    st.rerun()
     check_openai_config()
 
 
@@ -35,6 +36,7 @@ def on_change_aoai_key():
     """Change OpenAI Config. API key."""
     #st.session_state['manager'].env_helper.OPENAI_API_KEY = st.session_state['aoai_key']
     st.session_state['manager'].update_env_variable("AZURE_OPENAI_KEY", st.session_state['aoai_key'])
+    st.rerun()
     check_openai_config()
     
 
@@ -42,6 +44,7 @@ def on_change_aoai_deployment_name():
     """Change OpenAI Config. Deployment."""
     #st.session_state['manager'].env_helper.AZURE_OPENAI_MODEL_DEPLOYMENT_NAME = st.session_state['aoai_deployment_name']
     st.session_state['manager'].update_env_variable("AZURE_OPENAI_MODEL_DEPLOYMENT_NAME", st.session_state['aoai_deployment_name'])
+    st.rerun()
     check_openai_config()
     
 
@@ -49,6 +52,7 @@ def on_change_aoai_api_version():
     """Change OpenAI Config. API VERSION."""
     #st.session_state['manager'].env_helper.AZURE_OPENAI_MODEL_DEPLOYMENT_NAME = st.session_state['aoai_api_version']
     st.session_state['manager'].update_env_variable("AZURE_OPENAI_API_VERSION", st.session_state['aoai_api_version'])
+    st.rerun()
     check_openai_config()
     
 if 'session_id' not in st.session_state:
