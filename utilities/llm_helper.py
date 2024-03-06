@@ -395,9 +395,7 @@ class LLMHelper:
             api_key=az_openai_service_key,
             api_version=az_openai_api_version
         )
-        print("HERE")
-        print(az_openai_service_endpoint, az_openai_service_key, az_openai_service_deployment, az_openai_api_version)
-        print()
+
         llm_client.chat.completions.create(
             model=az_openai_service_deployment,
             messages=[{"role": "assistant", "content": "ping"}]
