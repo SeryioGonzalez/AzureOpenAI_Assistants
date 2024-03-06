@@ -10,3 +10,7 @@ pip install openai==1.12.0
 
 git clone https://github.com/SeryioGonzalez/AzureOpenAI_Assistants.git /home/streamlit/AzureOpenAI_Assistants
 
+wget -O /etc/systemd/system/streamlit_app.service https://raw.githubusercontent.com/SeryioGonzalez/AzureOpenAI_Assistants/main/infrastructure/streamlit.service
+sudo systemctl daemon-reload
+sudo systemctl enable streamlit_app.service
+sudo systemctl start streamlit_app.service

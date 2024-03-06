@@ -3,10 +3,10 @@ Description=Streamlit App Service
 After=network.target
 
 [Service]
-User=your_username
-Group=your_group
+User=streamlit
+Group=streamlit
 WorkingDirectory=/home/streamlit/AzureOpenAI_Assistants
-ExecStart=/home/streamlit/AzureOpenAI_Assistants/streamlit run assistants.py --server.port 8501
+ExecStart=streamlit run assistants.py --server.port 8501
 
 Restart=always
 RestartSec=5
