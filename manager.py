@@ -20,6 +20,10 @@ class Manager:
 
         self.api_response_sleep_time = 1
 
+    def update_env_variable(self, env_variable_name, env_variable_value):
+        self.env_helper.update_env_variable(env_variable_name, env_variable_value)
+        self.llm_helper.update_env_related_attributes()
+
     def get_message_list(self, assistant_id):
         """Get messages for current thread in assistant. Exposed to pages."""
         if assistant_id in self.thread_container:

@@ -31,6 +31,14 @@ class LLMHelper:
         self.openai_deployment = self.env_helper.AZURE_OPENAI_MODEL_DEPLOYMENT_NAME
         self.verbose = True
 
+    def update_env_related_attributes(self):
+        self.llm_client = AzureOpenAI(
+            azure_endpoint=self.env_helper.OPENAI_API_BASE,
+            api_key=self.env_helper.OPENAI_API_KEY,
+            api_version=self.env_helper.AZURE_OPENAI_API_VERSION
+        )
+        self.openai_deployment = self.env_helper.AZURE_OPENAI_MODEL_DEPLOYMENT_NAME
+
     def is_duplicated_assistant(self, new_assistant_name):
         """Check if the assistant is duplicated."""
         existing_assistant_names = [assistant.name for assistant in self.get_assistants()]
@@ -161,7 +169,7 @@ class LLMHelper:
 
     def add_message_to_assistant_thread(self, thread_id, message_role, message_content, file_ids):
         """Add message to Assistant thread."""
-        self.observability_helper.log(f"Message, content: {message_content} role: {message_role} to thread: {thread_id}, file ids:  {file_ids}", self.verbose)
+        self.observability_helper.log(f"Message, content: {message_content} role: {message_role} to thread {thread_id}, file ids:  {file_ids}", self.verbose)
 
         self.llm_client.beta.threads.messages.create(
             thread_id=thread_id,
@@ -380,14 +388,16 @@ class LLMHelper:
 
         return completion_text
 
-    def check_openai_endpoint(self, az_openai_service_endpoint, az_openai_service_key, az_openai_service_deployment):
+    def check_openai_endpoint(self, az_openai_service_endpoint, az_openai_service_key, az_openai_service_deployment, az_openai_api_version):
         """Check OpenAI endpoint."""
         llm_client = AzureOpenAI(
             azure_endpoint=az_openai_service_endpoint,
             api_key=az_openai_service_key,
-            api_version=self.env_helper.AZURE_OPENAI_API_VERSION
+            api_version=az_openai_api_version
         )
-
+        print("HERE")
+        print(az_openai_service_endpoint, az_openai_service_key, az_openai_service_deployment, az_openai_api_version)
+        print()
         llm_client.chat.completions.create(
             model=az_openai_service_deployment,
             messages=[{"role": "assistant", "content": "ping"}]
