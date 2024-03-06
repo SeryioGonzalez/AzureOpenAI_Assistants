@@ -1,14 +1,14 @@
 """Page for managing Assistants in a page."""
-from streamlit.runtime.scriptrunner import get_script_run_ctx
 import datetime
 import json
+from streamlit.runtime.scriptrunner import get_script_run_ctx
 import pandas as pd
 import streamlit as st
 
 import utilities.page_content as content
 from utilities.observability_helper import ObservabilityHelper
 from utilities.openapi_helper import OpenAPIHelper
-from utilities.llm_helper import LLMHelper
+from manager import Manager
 
 VERBOSE = True
 
@@ -52,7 +52,7 @@ def update_function(this_function_data):
     try:
         spec_json = json.loads(spec_data)
         st.session_state['logger'].log("Updating function {new_spec_json['name']}", verbose=VERBOSE)
-        st.session_state['llm_helper'].update_assistant_function(assistant_id, spec_json)
+        st.session_state['manager'].llm_helper.update_assistant_function(assistant_id, spec_json)
     except json.JSONDecodeError:
         st.session_state['logger'].log("Not a valid function JSON", verbose=VERBOSE)
 
@@ -60,7 +60,7 @@ def update_function(this_function_data):
 def delete_function(this_function_data):
     """Delete function definition."""
     assistant_id, function_name = this_function_data
-    st.session_state['llm_helper'].delete_assistant_function(assistant_id, function_name)
+    st.session_state['manager'].llm_helper.delete_assistant_function(assistant_id, function_name)
 
 
 def update_instructions(assistant_data):
@@ -70,7 +70,7 @@ def update_instructions(assistant_data):
         st.session_state['logger'].log(f'''
                                        For assistant {assistant_id} update instructions {st.session_state['updated_instructions']} 
                                        from {previous_instructions}''', verbose=VERBOSE)
-        st.session_state['llm_helper'].update_assistant_instructions(assistant_id, st.session_state['updated_instructions'])
+        st.session_state['manager'].llm_helper.update_assistant_instructions(assistant_id, st.session_state['updated_instructions'])
     else:
         st.session_state['logger'].log(f"No updated instructions for assistant {assistant_id}", verbose=VERBOSE)
 
@@ -78,26 +78,26 @@ def update_instructions(assistant_data):
 def update_code_interpreter(assistant_id):
     """Change code interpreter."""
     st.session_state['logger'].log(f"For {assistant_id} code interpreter is {st.session_state['code_interpreter']}", verbose=VERBOSE)
-    st.session_state['llm_helper'].update_assistant_code_interpreter_tool(assistant_id, st.session_state['code_interpreter'])
+    st.session_state['manager'].llm_helper.update_assistant_code_interpreter_tool(assistant_id, st.session_state['code_interpreter'])
 
 
 def delete_assistant(assistant_id):
     """Delete Assistant."""
     st.session_state['logger'].log(f"Deleting {assistant_id} ", verbose=VERBOSE)
-    st.session_state['llm_helper'].delete_assistant(assistant_id)
+    st.session_state['manager'].llm_helper.delete_assistant(assistant_id)
 
 def update_conv_starters(assistant_id, conv_starter_id):
     """Update Conv Starter."""
     key=f"update_conv_starters_{conv_starter_id}"
     conv_starter_text =  st.session_state[key]
 
-    st.session_state['llm_helper'].update_conv_starter(assistant_id, conv_starter_id, conv_starter_text)
+    st.session_state['manager'].llm_helper.update_conv_starter(assistant_id, conv_starter_id, conv_starter_text)
 
 if 'session_id' not in st.session_state:
     ctx = get_script_run_ctx()
     st.session_state['session_id'] = ctx.session_id
-    st.session_state['llm_helper'] = LLMHelper()
-    
+    st.session_state['manager'] = Manager(st.session_state['session_id'])
+
     st.session_state['logger'] = ObservabilityHelper()
     st.session_state['logger'].log(f"New session created with id {st.session_state['session_id']}", verbose=VERBOSE)
 
@@ -108,7 +108,7 @@ st.session_state['logger'].log("Configuring assistants", verbose=VERBOSE)
 st.title(content.MANAGE_TITLE_TEXT)
 
 # DISPLAY - ASSISTANT PANEL
-assistant_list = st.session_state['llm_helper'].get_assistants()
+assistant_list = st.session_state['manager'].llm_helper.get_assistants()
 if len(assistant_list) > 0:
     # All Assitants
     assistant_id_name_list = [(assistant.id, assistant.name) for assistant in assistant_list]
@@ -125,8 +125,8 @@ if len(assistant_list) > 0:
         # New function submitted
     if new_assistant_submit:
         if new_assistant_name != "" and new_assistant_instructions != "":
-            if st.session_state['llm_helper'].is_duplicated_assistant(new_assistant_name) is False:
-                st.session_state['llm_helper'].create_assistant(new_assistant_name, new_assistant_instructions)
+            if st.session_state['manager'].llm_helper.is_duplicated_assistant(new_assistant_name) is False:
+                st.session_state['manager'].llm_helper.create_assistant(new_assistant_name, new_assistant_instructions)
                 st.session_state['logger'].log(f"New assistant {new_assistant_name} created - refreshing", verbose=VERBOSE)
                 st.rerun()
             else:
@@ -141,10 +141,10 @@ if len(assistant_list) > 0:
     this_assistant_name  = st.selectbox(content.MANAGE_ASSISTANT_SELECT_TEXT, assistant_name_list)
     this_assistant_index = assistant_name_list.index(this_assistant_name)
     this_assistant_id = assistant_id_list[this_assistant_index]
-    this_assistant = st.session_state['llm_helper'].get_assistant(this_assistant_id)
+    this_assistant = st.session_state['manager'].llm_helper.get_assistant(this_assistant_id)
 
-    this_assistant_conv_starters = st.session_state['llm_helper'].get_assistant_conversation_starter_values(this_assistant)
-    this_assistant_files = st.session_state['llm_helper'].get_files_from_assistant(this_assistant)
+    this_assistant_conv_starters = st.session_state['manager'].llm_helper.get_assistant_conversation_starter_values(this_assistant)
+    this_assistant_files = st.session_state['manager'].llm_helper.get_files_from_assistant(this_assistant)
 
     # Selected Assistant info
     assistant_description  = this_assistant.description
@@ -167,22 +167,26 @@ if len(assistant_list) > 0:
     # New function submitted
     if new_spec_submit:
         if OpenAPIHelper.validate_spec_json(new_spec_body):
+            st.session_state['logger'].log("Valid Spec", verbose=VERBOSE)
+            OpenAPIHelper.save_openapi_spec(this_assistant_id, new_spec_body)
             openai_functions = OpenAPIHelper.extract_openai_functions_from_spec(new_spec_body)
+            st.session_state['logger'].log(f"Extracted functions {openai_functions}", verbose=VERBOSE)
             for openai_function in openai_functions:
-                st.session_state['llm_helper'].create_assistant_function(this_assistant_id, openai_function)
+                st.session_state['manager'].llm_helper.create_assistant_function(this_assistant_id, openai_function)
                 st.session_state['logger'].log("New function added - refreshing", verbose=VERBOSE)
             st.rerun()
         else:
             st.error(content.MANAGE_ASSISTANT_NEW_SPEC_NOT_VALID)
-            st.session_state['logger'].log("Not a valid function", verbose=VERBOSE)
+            st.session_state['logger'].log("Not a valid OpenAPI Spec", verbose=VERBOSE)
 
     st.session_state['logger'].log("Listing functions", verbose=VERBOSE)
-    # Listing function
-    this_assistant_functions = st.session_state['llm_helper'].get_functions_from_assistant(this_assistant)
+    # Listing function fro API
+    this_assistant_functions = st.session_state['manager'].llm_helper.get_functions_from_assistant(this_assistant)
     functions_data_list = get_assistant_function_data(this_assistant_functions)
-    this_assistant_has_code_interpreter = st.session_state['llm_helper'].assistant_has_code_interpreter(this_assistant_id)
+    this_assistant_has_code_interpreter = st.session_state['manager'].llm_helper.assistant_has_code_interpreter(this_assistant_id)
 
-    st.write(content.MANAGE_SELECTED_ASSISTANT_FUNCTIONS)
+    st.markdown(f"<DIV style='text-align: center;'><H4>{content.MANAGE_SELECTED_ASSISTANT_FUNCTIONS}</H4></DIV>", unsafe_allow_html=True)
+    
     for function_data in functions_data_list:
         with st.expander(function_data['name']):
             function_body = st.text_area(content.MANAGE_ASSISTANT_ACTION_BODY,
@@ -219,7 +223,7 @@ else:
 
 st.markdown(f"<DIV style='text-align: center;'><H3>{content.MANAGE_SELECTED_ASSISTANT_CONV_STARTERS}</H3></DIV>", unsafe_allow_html=True)
 
-st.text_input(content.MANAGE_SELECTED_ASSISTANT_NEW_CONV_STARTER, 
+st.text_input(content.MANAGE_SELECTED_ASSISTANT_NEW_CONV_STARTER,
             key="update_conv_starters_new",
             on_change=update_conv_starters,
             args=(this_assistant_id, "new"))

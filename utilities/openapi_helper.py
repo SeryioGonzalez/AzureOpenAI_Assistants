@@ -7,21 +7,40 @@ from utilities.observability_helper import ObservabilityHelper
 
 class OpenAPIHelper:
     """This class abstract OpenAPI operations."""
+# VARIABLES
+    VERBOSE = False
+    SPEC_FOLDER = "assistant_data/"
+    SPEC_FILE_NAME_SUFFIX = ".openapi_spec.json"
+
+    OPENAPI_SPEC_MANDATORY_KEYS = [ "info", "openapi", "servers", "paths"]
 
 # INITIALIZATION METHODS ########################################
-    VERBOSE = False
+    @staticmethod
+    def _get_openapi_spec_file_path(assistant_id):
+        return OpenAPIHelper.SPEC_FOLDER + str(assistant_id) + OpenAPIHelper.SPEC_FILE_NAME_SUFFIX
 
     @staticmethod
-    def _extract_spec(openapi_json_spec_file):
-        """Extract OpenAPI Spec as JSON."""
-        with open(openapi_json_spec_file, 'r', encoding="utf-8") as json_file:
-            return json.load(json_file)
+    def get_openapi_spec(assistant_id):
+        """Return OpenAPI spec for assistant."""
+        file_path = OpenAPIHelper._get_openapi_spec_file_path(assistant_id)
+        with open(file_path, 'r', encoding="utf-8") as file:
+            openapi_spec = json.load(file)
+
+        return openapi_spec
 
     @staticmethod
-    def _create_function_dict(openapi_spec):
+    def save_openapi_spec(assistant_id, openapi_spec):
+        """Save a spec for an assistant."""
+        openapi_spec = json.loads( openapi_spec)
+        file_path = OpenAPIHelper._get_openapi_spec_file_path(assistant_id)
+        with open(file_path, 'w', encoding="utf-8") as file:
+            json.dump(openapi_spec, file, indent=4)
+
+    @staticmethod
+    def _create_function_dict_from_openapi_spec(openapi_spec):
         """Create a dict out of specs."""
+        #openapi_spec = json.loads(openapi_spec)
         function_dict = {}
-
         for path in openapi_spec['paths']:
             for http_method in ['get', 'post', 'put', 'delete', 'patch']:
                 if http_method in openapi_spec['paths'][path]:
@@ -112,7 +131,8 @@ class OpenAPIHelper:
         """Validate JSON Spec."""
         try:
             new_spec_json = json.loads(new_spec_body)
-            return 'info' in new_spec_json and 'paths' in new_spec_json and 'servers'
+            has_mandatory_openapi_spec_keys = all(key in new_spec_json for key in OpenAPIHelper.OPENAPI_SPEC_MANDATORY_KEYS)
+            return has_mandatory_openapi_spec_keys
         except json.JSONDecodeError:
             return False
 
@@ -127,8 +147,13 @@ class OpenAPIHelper:
     @staticmethod
     def call_function(function_name, function_args, openapi_spec):
         """Execute a function."""
-        function_dict   = OpenAPIHelper._create_function_dict(openapi_spec)
-        function_data   = function_dict[function_name]
+        function_dict   = OpenAPIHelper._create_function_dict_from_openapi_spec(openapi_spec)
+        function_data   = function_dict.get(function_name, None)
+
+        if function_data == None:
+            ObservabilityHelper.log(f"ERROR - Function {function_name} not in spec", OpenAPIHelper.VERBOSE)
+            return None
+
         function_method = function_data['method']
 
         function_args_dict = json.loads(function_args)
@@ -155,4 +180,4 @@ class OpenAPIHelper:
 
         ObservabilityHelper.log("ERROR - No response from functions", OpenAPIHelper.VERBOSE)
 
-        return "No response from function call"
+        return None

@@ -52,6 +52,15 @@ st.session_state['logger'].log(f"Session id is {st.session_state['session_id']}"
 
 
 st.header(content.VARIABLE_PAGE_HEADER)
-az_openai_service_endpoint   = st.text_input(content.VARIABLE_CONFIG_PAGE_OPENAI_ENDPOINT_FIELD,   st.session_state['manager'].env_helper.OPENAI_API_BASE,                    on_change=on_change_aoai_api_base,   key="aoai_api_base")
-az_openai_service_key        = st.text_input(content.VARIABLE_CONFIG_PAGE_OPENAI_KEY_FIELD,        st.session_state['manager'].env_helper.OPENAI_API_KEY,                     on_change=on_change_aoai_key,        key="aoai_key")
-az_openai_service_deployment = st.text_input(content.VARIABLE_CONFIG_PAGE_OPENAI_DEPLOYMENT_FIELD, st.session_state['manager'].env_helper.AZURE_OPENAI_MODEL_DEPLOYMENT_NAME, on_change=on_change_aoai_deployment, key="aoai_deployment")
+az_openai_service_endpoint   = st.text_input(content.VARIABLE_CONFIG_PAGE_OPENAI_ENDPOINT_FIELD,
+                                             st.session_state['manager'].env_helper.OPENAI_API_BASE,
+                                             on_change=on_change_aoai_api_base,
+                                             key="aoai_api_base")
+az_openai_service_key        = st.text_input(content.VARIABLE_CONFIG_PAGE_OPENAI_KEY_FIELD,
+                                             st.session_state['manager'].env_helper.OPENAI_API_KEY,
+                                             on_change=on_change_aoai_key,
+                                             key="aoai_key")
+az_openai_service_deployment = st.text_input(content.VARIABLE_CONFIG_PAGE_OPENAI_DEPLOYMENT_FIELD,
+                                             st.session_state['manager'].env_helper.AZURE_OPENAI_MODEL_DEPLOYMENT_NAME,
+                                             on_change=on_change_aoai_deployment,
+                                             key="aoai_deployment")

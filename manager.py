@@ -21,16 +21,13 @@ class Manager:
 
         self.api_response_sleep_time = 1
 
-        with open('ikea_openapi.json', 'r', encoding="utf-8") as file:
-            self.openapi_spec = json.load(file)
-
     def get_message_list(self, assistant_id):
         """Get messages for current thread in assistant. Exposed to pages."""
         if assistant_id in self.thread_container:
             thread_id = self.thread_container[assistant_id]
             return self.get_thread_messages(thread_id)
-        else:
-            return []
+
+        return []
 
     def are_there_assistants(self):
         """Check if are the assistants."""
@@ -86,20 +83,20 @@ class Manager:
             message_list = [{'message_value': message.content[0].text.value, 'message_role': message.role} for message in raw_messages]
             self.observability_helper.log(f"Message received is {message_list[0]}", verbose)
             return message_list
-        else:
-            return []
+
+        return []
 
     def get_uploaded_files(self, assistant_id):
         """Get az_oai_assistant uploaded files id by the user for current thread in assistant."""
         return [file_tuple[1] for file_tuple in self.thread_container[assistant_id]['files']]
 
-    def run_thread(self, prompt, assistant_id, verbose=False):
+    def run_thread(self, prompt, assistant_id, verbose=True):
         """Run a thread with the assistant."""
         # Get or create a thread
         thread_id = self.get_thread_id_for_assistant(assistant_id)
         # Get files in thread
         file_ids = self.get_uploaded_files(assistant_id)
-
+        openapi_spec = OpenAPIHelper.get_openapi_spec(assistant_id)
         # Add message to thread (llm)
         self.llm_helper.add_message_to_assistant_thread(thread_id, "user", prompt, file_ids)
 
@@ -108,7 +105,7 @@ class Manager:
         while run.status != "completed":
             self.observability_helper.log(f"Run status is {run.status}", verbose)
             if run.status == 'requires_action':
-                self.observability_helper.log(f"Required action type is {run.required_action.type}", verbose)
+                self.observability_helper.log(f"Next action type: {run.required_action.type}", verbose)
                 if run.required_action.type == 'submit_tool_outputs':
                     tool_output_list = []
                     for tool_call in run.required_action.submit_tool_outputs.tool_calls:
@@ -116,12 +113,12 @@ class Manager:
                         function_name = tool_call.function.name
                         function_args = tool_call.function.arguments
                         self.observability_helper.log(f"Required calling function {function_name} with args {function_args}")
-                        function_call_result = OpenAPIHelper.call_function(function_name, function_args, self.openapi_spec)
+                        function_call_result = OpenAPIHelper.call_function(function_name, function_args, openapi_spec)
                         self.observability_helper.log(f"Function result is {function_call_result}", verbose)
 
                         tool_call_output = {
                             "tool_call_id": tool_id,
-                            "output": function_call_result
+                            "output": str(function_call_result)
                         }
 
                         tool_output_list.append(tool_call_output)
@@ -159,9 +156,9 @@ class Manager:
         """Check if a file has already been uploaded. Streamlit duplicates file uploads."""
         if assistant_id not in self.thread_container:
             return False
-        else:
-            uploaded_local_file_ids = [file_tuple[0] for file_tuple in self.thread_container[assistant_id]['files']]
-            return local_file_id in uploaded_local_file_ids
+
+        uploaded_local_file_ids = [file_tuple[0] for file_tuple in self.thread_container[assistant_id]['files']]
+        return local_file_id in uploaded_local_file_ids
 
     def upload_file_to_assistant(self, assistant_id, uploaded_file, verbose=True):
         """Push file to assistants."""

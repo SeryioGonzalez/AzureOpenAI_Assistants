@@ -51,14 +51,16 @@ class LLMHelper:
         )
 
         return assistant
-    
+
     def get_assistant_conversation_starter_values(self, assistant, assistant_id=None):
         """Get assistant conversation starters."""
         # In some scenarios, we do not have the assistant object
         if assistant_id is not None:
             assistant = self.get_assistant(assistant_id)
         # Values from metadata keys starting wiht prefix and non empty values
-        this_assistant_conv_starter_values = [value for key, value in assistant.metadata.items() if key.startswith(self.conversation_starter_prefix) and value != ""]
+        this_assistant_conv_starter_values = [value for key, value in assistant.metadata.items()
+                                              if key.startswith(self.conversation_starter_prefix) and
+                                                value != ""]
         return this_assistant_conv_starter_values
 
     def get_assistant_conversation_starters(self, assistant):
@@ -81,9 +83,9 @@ class LLMHelper:
         else:
             key = f"{self.conversation_starter_prefix}{conv_starter_id}"
         conv_starters[key] = conv_starter_text
-        
+
         self.modify_assistant_metadata(assistant_id, conv_starters)
-        
+
     def create_assistant_file(self, assistant_id, file_id):
         """Upload the file to OpenAI."""
         file_upload_to_assistant_response = self.llm_client.beta.assistants.files.create(
@@ -93,9 +95,9 @@ class LLMHelper:
         if file_upload_to_assistant_response.id is not None:
             self.observability_helper.log("Uploading file to assistant OK", self.verbose)
             return True
-        else:
-            self.observability_helper.log("Uploading file to assistant failed", self.verbose)
-            return False
+
+        self.observability_helper.log("Uploading file to assistant failed", self.verbose)
+        return False
 
     def get_assistants(self):
         """List Assistants."""
@@ -159,7 +161,7 @@ class LLMHelper:
 
     def add_message_to_assistant_thread(self, thread_id, message_role, message_content, file_ids):
         """Add message to Assistant thread."""
-        self.observability_helper.log(f"Creating message with content {message_content} and role {message_role} to thread {thread_id} with file ids:  {file_ids}", self.verbose)
+        self.observability_helper.log(f"Message, content: {message_content} role: {message_role} to thread: {thread_id}, file ids:  {file_ids}", self.verbose)
 
         self.llm_client.beta.threads.messages.create(
             thread_id=thread_id,

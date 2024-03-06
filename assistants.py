@@ -48,8 +48,8 @@ if st.session_state['manager'].are_there_assistants():
 
     if len(conv_starters) > 0 and ('has_threads' not in st.session_state or st.session_state['has_threads'] != assistant_id):
         st.markdown(f"<DIV style='text-align: center;'><H3>{content.MAIN_ASSISTANT_CONV_STARTERS}</H3></DIV>", unsafe_allow_html=True)
-        for index, this_assistant_conv_starter in enumerate(conv_starters):
-            st.markdown(f"<DIV><H5>{this_assistant_conv_starter}</H5></DIV>", unsafe_allow_html=True)
+        for index, conv_starter in enumerate(conv_starters):
+            st.markdown(f"<DIV><H5>{conv_starter}</H5></DIV>", unsafe_allow_html=True)
 
 # DISPLAY - USER PROMPT
     if user_prompt := st.chat_input(content.MAIN_ASSISTANT_CHAT_WELCOME):

@@ -1,0 +1,3 @@
+[MAIN]
+max-line-length=160
+disable=import-error,invalid-name
