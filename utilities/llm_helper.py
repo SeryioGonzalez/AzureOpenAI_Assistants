@@ -54,15 +54,17 @@ class LLMHelper:
     
     def get_assistant_conversation_starter_values(self, assistant, assistant_id=None):
         """Get assistant conversation starters."""
+        # In some scenarios, we do not have the assistant object
         if assistant_id is not None:
             assistant = self.get_assistant(assistant_id)
-
+        # Values from metadata keys starting wiht prefix and non empty values
         this_assistant_conv_starter_values = [value for key, value in assistant.metadata.items() if key.startswith(self.conversation_starter_prefix) and value != ""]
         return this_assistant_conv_starter_values
 
     def get_assistant_conversation_starters(self, assistant):
         """Get assistant conversation starters."""
-        this_assistant_conv_starters = {key:value for key, value in assistant.metadata.items() if key.startswith(self.conversation_starter_prefix) and value != ""}
+        # Metadata key-pairs starting with prefix
+        this_assistant_conv_starters = {key:value for key, value in assistant.metadata.items() if key.startswith(self.conversation_starter_prefix)}
         return this_assistant_conv_starters
 
     def update_conv_starter(self, assistant_id, conv_starter_id, conv_starter_text):
@@ -71,7 +73,11 @@ class LLMHelper:
         conv_starters = self.get_assistant_conversation_starters(assistant)
 
         if conv_starter_id == "new":
-            key = f"{self.conversation_starter_prefix}{len(conv_starters)}"
+            first_empty_key = [key for key, value in conv_starters.items() if value == ""]
+            if len(first_empty_key) == 0:
+                key = f"{self.conversation_starter_prefix}{len(conv_starters)}"
+            else:
+                key = first_empty_key[0]
         else:
             key = f"{self.conversation_starter_prefix}{conv_starter_id}"
         conv_starters[key] = conv_starter_text
