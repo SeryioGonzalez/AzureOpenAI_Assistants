@@ -107,6 +107,28 @@ st.session_state['logger'].log("Configuring assistants", verbose=VERBOSE)
 # DISPLAY - TITLE
 st.title(content.MANAGE_TITLE_TEXT)
 
+# DISPLAY - CREATE ASSISTANT FORM
+with st.form("add_assistant_form"):
+    with st.expander(content.MANAGE_CREATE_ASSISTANT):
+        new_assistant_name         = st.text_input(content.MANAGE_CREATE_ASSISTANT_NAME, key="new_assistant_name")
+        new_assistant_instructions = st.text_area(content.MANAGE_CREATE_ASSISTANT_INSTRUCTIONS, key="new_assistant_instructions")
+        new_assistant_submit       = st.form_submit_button(content.MANAGE_CREATE_ASSISTANT_SUBMIT)
+
+    # New function submitted
+if new_assistant_submit:
+    if new_assistant_name != "" and new_assistant_instructions != "":
+        if st.session_state['manager'].llm_helper.is_duplicated_assistant(new_assistant_name) is False:
+            st.session_state['manager'].llm_helper.create_assistant(new_assistant_name, new_assistant_instructions)
+            st.session_state['logger'].log(f"New assistant {new_assistant_name} created - refreshing", verbose=VERBOSE)
+            st.rerun()
+        else:
+            st.session_state['logger'].log(f"Duplicated assistant {new_assistant_name}", verbose=VERBOSE)
+            st.error(content.MANAGE_CREATE_ASSISTANT_DUPLICATED)
+
+    else:
+        st.session_state['logger'].log(f"Name {new_assistant_name} or instructions {new_assistant_instructions} not specified", verbose=VERBOSE)
+        st.error(content.MANAGE_CREATE_ASSISTANT_NO_NAME_OR_INSTRUCTIONS)
+
 # DISPLAY - ASSISTANT PANEL
 assistant_list = st.session_state['manager'].llm_helper.get_assistants()
 if len(assistant_list) > 0:
@@ -114,29 +136,6 @@ if len(assistant_list) > 0:
     assistant_id_name_list = [(assistant.id, assistant.name) for assistant in assistant_list]
     assistant_id_list   = [assistant[0] for assistant in assistant_id_name_list]
     assistant_name_list = [assistant[1] for assistant in assistant_id_name_list]
-
-# DISPLAY - CREATE ASSISTANT FORM
-    with st.form("add_assistant_form"):
-        with st.expander(content.MANAGE_CREATE_ASSISTANT):
-            new_assistant_name         = st.text_input(content.MANAGE_CREATE_ASSISTANT_NAME, key="new_assistant_name")
-            new_assistant_instructions = st.text_area(content.MANAGE_CREATE_ASSISTANT_INSTRUCTIONS, key="new_assistant_instructions")
-            new_assistant_submit       = st.form_submit_button(content.MANAGE_CREATE_ASSISTANT_SUBMIT)
-
-        # New function submitted
-    if new_assistant_submit:
-        if new_assistant_name != "" and new_assistant_instructions != "":
-            if st.session_state['manager'].llm_helper.is_duplicated_assistant(new_assistant_name) is False:
-                st.session_state['manager'].llm_helper.create_assistant(new_assistant_name, new_assistant_instructions)
-                st.session_state['logger'].log(f"New assistant {new_assistant_name} created - refreshing", verbose=VERBOSE)
-                st.rerun()
-            else:
-                st.session_state['logger'].log(f"Duplicated assistant {new_assistant_name}", verbose=VERBOSE)
-                st.error(content.MANAGE_CREATE_ASSISTANT_DUPLICATED)
-
-        else:
-            st.session_state['logger'].log(f"Name {new_assistant_name} or instructions {new_assistant_instructions} not specified", verbose=VERBOSE)
-            st.error(content.MANAGE_CREATE_ASSISTANT_NO_NAME_OR_INSTRUCTIONS)
-
 # Selected Assistant
     this_assistant_name  = st.selectbox(content.MANAGE_ASSISTANT_SELECT_TEXT, assistant_name_list)
     this_assistant_index = assistant_name_list.index(this_assistant_name)
@@ -208,6 +207,21 @@ if len(assistant_list) > 0:
               on_change=update_code_interpreter, key="code_interpreter",
               args=(this_assistant_id,),
               value=this_assistant_has_code_interpreter)
+    st.markdown(f"<DIV style='text-align: center;'><H3>{content.MANAGE_SELECTED_ASSISTANT_CONV_STARTERS}</H3></DIV>", unsafe_allow_html=True)
+
+    st.text_input(content.MANAGE_SELECTED_ASSISTANT_NEW_CONV_STARTER,
+                key="update_conv_starters_new",
+                on_change=update_conv_starters,
+                args=(this_assistant_id, "new"))
+
+    if len(this_assistant_conv_starters) > 0:
+        st.markdown(f"<DIV style='text-align: center;'><H4>{content.MANAGE_SELECTED_ASSISTANT_EXISTING_CONV_STARTERS}</H4></DIV>", unsafe_allow_html=True)
+        for index, conv_starter in enumerate(this_assistant_conv_starters):
+            if conv_starter != "":
+                st.text_input(content.MANAGE_SELECTED_ASSISTANT_EXISTING_CONV_STARTER_LABEL, conv_starter,
+                            key="update_conv_starters_" + str(index),
+                            on_change=update_conv_starters,
+                            args=(this_assistant_id, index))
 # DISPLAY - ASSISTANT files
 
     # st.markdown(f"<DIV style='text-align: center;'><H3>{content.MANAGE_SELECTED_ASSISTANT_FILES}</H3></DIV>", unsafe_allow_html=True)
@@ -219,20 +233,6 @@ if len(assistant_list) > 0:
     #     st.write(content.MANAGE_NO_FILE_MESSAGE)
     #
 else:
-    st.write(content.MAIN_NO_ASSISTANT_TEXT)
+    st.markdown(f"<DIV style='text-align: center;'><H3>{content.MAIN_NO_ASSISTANT_TEXT}</H3></DIV>", unsafe_allow_html=True)
 
-st.markdown(f"<DIV style='text-align: center;'><H3>{content.MANAGE_SELECTED_ASSISTANT_CONV_STARTERS}</H3></DIV>", unsafe_allow_html=True)
 
-st.text_input(content.MANAGE_SELECTED_ASSISTANT_NEW_CONV_STARTER,
-            key="update_conv_starters_new",
-            on_change=update_conv_starters,
-            args=(this_assistant_id, "new"))
-
-if len(this_assistant_conv_starters) > 0:
-    st.markdown(f"<DIV style='text-align: center;'><H4>{content.MANAGE_SELECTED_ASSISTANT_EXISTING_CONV_STARTERS}</H4></DIV>", unsafe_allow_html=True)
-    for index, conv_starter in enumerate(this_assistant_conv_starters):
-        if conv_starter != "":
-            st.text_input(content.MANAGE_SELECTED_ASSISTANT_EXISTING_CONV_STARTER_LABEL, conv_starter,
-                        key="update_conv_starters_" + str(index),
-                        on_change=update_conv_starters,
-                        args=(this_assistant_id, index))
