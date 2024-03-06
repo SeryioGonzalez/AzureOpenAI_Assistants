@@ -26,7 +26,7 @@
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2023-09-01",
             "name": "[variables('nsg_name')]",
-            "location": "westeurope",
+            "location": "[resourceGroup().location]",
             "properties": {
                 "securityRules": [
                     {
@@ -55,13 +55,12 @@
             "type": "Microsoft.Network/publicIPAddresses",
             "apiVersion": "2023-09-01",
             "name": "[variables('publicIp_name')]",
-            "location": "westeurope",
+            "location": "[resourceGroup().location]",
             "sku": {
                 "name": "Standard",
                 "tier": "Regional"
             },
             "properties": {
-                "ipAddress": "20.61.60.18",
                 "publicIPAddressVersion": "IPv4",
                 "publicIPAllocationMethod": "Static",
                 "idleTimeoutInMinutes": 4,
@@ -72,7 +71,7 @@
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "2023-09-01",
             "name": "[variables('vnet_name')]",
-            "location": "westeurope",
+            "location": "[resourceGroup().location]",
             "properties": {
                 "addressSpace": {
                     "addressPrefixes": [
@@ -100,7 +99,7 @@
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "2023-03-01",
             "name": "[pvariables('vm_name')]",
-            "location": "westeurope",
+            "location": "[resourceGroup().location]",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/networkInterfaces', variables('nic_name'))]"
             ],
@@ -217,7 +216,7 @@
             "type": "Microsoft.Network/networkInterfaces",
             "apiVersion": "2023-09-01",
             "name": "[variables('nic_name')]",
-            "location": "westeurope",
+            "location": "[resourceGroup().location]",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIp_name'))]",
                 "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnet_name'), 'default')]",
