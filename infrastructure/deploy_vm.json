@@ -98,7 +98,7 @@
         {
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "2023-03-01",
-            "name": "[pvariables('vm_name')]",
+            "name": "[variables('vm_name')]",
             "location": "[resourceGroup().location]",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/networkInterfaces', variables('nic_name'))]"
