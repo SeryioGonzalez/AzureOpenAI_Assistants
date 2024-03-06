@@ -1,2 +1,1 @@
-# Streamlit implementation for managing and using Azure OpenAI Assistants
-# WIP
+# Streamlit APP using Azure OpenAI Assistants
