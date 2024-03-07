@@ -9,12 +9,7 @@
         "vm_password": {
             "defaultValue": "Sergio1sergio2",
             "type": "String"
-        },
-        "customData": {
-            "type": "string",
-            "defaultValue": "git clone https://github.com/SeryioGonzalez/AzureOpenAI_Assistants.git; cd AzureOpenAI_Assistants; ./aux_installer.sh"
         }
-
     },
     "variables": {
         "nic_name":           "[concat(parameters('vm_name'), '-nic')]",
@@ -152,7 +147,7 @@
                     "computerName": "[parameters('vm_name')]",
                     "adminUsername": "streamlit",
                     "adminPassword": "[parameters('vm_password')]",
-                    "customData": "[base64(parameters('customData'))]",
+                    "customData": "[base64(git clone https://github.com/SeryioGonzalez/AzureOpenAI_Assistants.git; cd AzureOpenAI_Assistants; ./aux_installer.sh)]",
                     "linuxConfiguration": {
                         "disablePasswordAuthentication": false
                     }
