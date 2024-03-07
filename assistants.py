@@ -30,11 +30,13 @@ if openai_status:
     if len(assistant_data_list) > 0:
         # GET ASSISTANT INFO
         st.session_state['logger'].log(f"MAIN - Num of assistants is {len(assistant_data_list)}", verbose=VERBOSE)
-        assistant_ids, assistant_names, assistant_descriptions = [id for id, _, _ in assistant_data_list], [name for _, name, _ in assistant_data_list], [description for _, _, description in assistant_data_list]
-
+        assistant_ids, assistant_names, assistant_descriptions, assistant_created_at = zip(*assistant_data_list)
+        #The user will select the assistant and from there we retrieve data
         assistant_name = st.selectbox(content.MAIN_ASSISTANT_SELECT_TEXT,  assistant_names)
         assistant_id = assistant_ids[assistant_names.index(assistant_name)]
         assistant_description = assistant_descriptions[assistant_names.index(assistant_name)]
+        assistant_created_at  = assistant_created_at[assistant_names.index(assistant_name)]
+
         st.session_state['logger'].log(f"MAIN - Rendering assistant_id {assistant_id}", verbose=VERBOSE)
     # DISPLAY - Assistant description
         st.write(assistant_description)

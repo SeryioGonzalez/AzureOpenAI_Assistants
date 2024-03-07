@@ -6,3 +6,4 @@ test.py
 assistant_data/*
 code_quality.sh
 .pylintrc
+test.*

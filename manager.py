@@ -1,5 +1,6 @@
 """Manages Assistant flows."""
 import time
+from datetime import datetime
 
 from utilities.env_helper           import EnvHelper
 from utilities.llm_helper           import LLMHelper
@@ -45,7 +46,7 @@ class Manager:
         """Get Assistant id and names."""
         try:
             assistant_list = self.get_assistant_list()
-            assistant_data_tuple_list = [(assistant.id, assistant.name, assistant.description) for assistant in assistant_list]
+            assistant_data_tuple_list = [(assistant.id, assistant.name, assistant.description, datetime.utcfromtimestamp(assistant.created_at).strftime("%Y-%m-%d %H:%M:%S")) for assistant in assistant_list]
 
             return assistant_data_tuple_list
         except:
