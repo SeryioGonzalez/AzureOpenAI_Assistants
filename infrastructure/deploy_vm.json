@@ -4,11 +4,10 @@
     "parameters": {
         "vm_name": {
             "defaultValue": "assistants",
-            "type": "String"
+            "type": "string"
         },
         "vm_password": {
-            "defaultValue": "Sergio1sergio2",
-            "type": "String"
+            "type": "securestring"
         }
     },
     "variables": {
