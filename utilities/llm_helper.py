@@ -108,9 +108,11 @@ class LLMHelper:
 
     def get_assistants(self):
         """List Assistants."""
-        assistant_list = self.llm_client.beta.assistants.list().data
-
-        return assistant_list
+        try:
+            assistant_list = self.llm_client.beta.assistants.list().data
+            return assistant_list
+        except:
+            return None
 
     def get_assistant_files(self, assistant_id):
         """List Assistants files."""

@@ -115,9 +115,11 @@ st.session_state['logger'].log("CONF ASSIST - Configuring assistants", verbose=V
 
 # DISPLAY - TITLE
 st.title(content.MANAGE_TITLE_TEXT)
-openai_status = st.session_state['manager'].llm_helper.check_openai_endpoint_from_settings()
+# We had a specific method for checking OpenAI Status, but calling the API is too slow. 
+# Better tune the API data retrieval to return None if the credentials are not working
+assistant_list = st.session_state['manager'].llm_helper.get_assistants()
+openai_status = assistant_list is not None
 if openai_status:
-        
     # DISPLAY - CREATE ASSISTANT FORM
     with st.form("add_assistant_form"):
         with st.expander(content.MANAGE_CREATE_ASSISTANT):
@@ -142,7 +144,7 @@ if openai_status:
             st.error(content.MANAGE_CREATE_ASSISTANT_NO_NAME_OR_INSTRUCTIONS)
 
     # DISPLAY - ASSISTANT PANEL
-    assistant_list = st.session_state['manager'].llm_helper.get_assistants()
+
     if len(assistant_list) > 0:
         # All Assitants
         assistant_id_name_list = [(assistant.id, assistant.name) for assistant in assistant_list]
