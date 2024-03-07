@@ -47,14 +47,15 @@ class LLMHelper:
 
         return new_assistant_name in existing_assistant_names
 
-    def create_assistant(self, new_assistant_name, new_assistant_instructions):
+    def create_assistant(self, assistant_name, assistant_description, assistant_instructions):
         """Crate assistants. Public."""
-        self._create_assistant(new_assistant_name, new_assistant_instructions, [])
+        self._create_assistant(assistant_name, assistant_description, assistant_instructions, [])
 
-    def _create_assistant(self, assistant_name: str, instructions: str, tools: list):
+    def _create_assistant(self, assistant_name: str, description: str, instructions: str, tools: list):
         """Crate assistants. Private."""
         assistant = self.llm_client.beta.assistants.create(
             name=assistant_name,
+            description=description,
             instructions=instructions,
             tools=tools,
             model=self.openai_deployment
@@ -272,6 +273,11 @@ class LLMHelper:
     def update_assistant_instructions(self, assistant_id, updated_instructions):
         """Update instructions."""
         self.llm_client.beta.assistants.update(assistant_id, instructions=updated_instructions)
+
+# DESCRIPTION
+    def update_assistant_description(self, assistant_id, updated_description):
+        """Update description."""
+        self.llm_client.beta.assistants.update(assistant_id, description=updated_description)
 
 # FUNCTIONS
     def _tools_to_json(self, assistant_tools):

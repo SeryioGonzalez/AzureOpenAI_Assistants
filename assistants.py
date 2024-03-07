@@ -24,11 +24,15 @@ openai_status = st.session_state['manager'].llm_helper.check_openai_endpoint_fro
 if openai_status:
     if st.session_state['manager'].are_there_assistants():
         # GET ASSISTANT INFO
-        assistants = st.session_state['manager'].get_assistant_id_name_tuple_list()
-        assistant_ids, assistant_names = [id for id, _ in assistants], [name for _, name in assistants]
+        assistants = st.session_state['manager'].get_assistant_data_tuple_list()
+        assistant_ids, assistant_names, assistant_descriptions = [id for id, _, _ in assistants], [name for _, name, _ in assistants], [description for _, _, description in assistants]
 
         assistant_name = st.selectbox(content.MAIN_ASSISTANT_SELECT_TEXT,  assistant_names)
         assistant_id = assistant_ids[assistant_names.index(assistant_name)]
+        assistant_description = assistant_descriptions[assistant_names.index(assistant_name)]
+
+    # DISPLAY - Assistant description
+        st.write(assistant_description)
 
     # DISPLAY - Chat messages from history on app rerun
         for message in st.session_state['manager'].get_message_list(assistant_id):
@@ -47,11 +51,11 @@ if openai_status:
                     st.write(content.MAIN_FILE_UPLOAD_KO)
 
         conv_starters = st.session_state['manager'].llm_helper.get_assistant_conversation_starter_values(None, assistant_id=assistant_id)
-
+    # DISPLAY - CONVERSATION STARTERS
         if len(conv_starters) > 0 and ('has_threads' not in st.session_state or st.session_state['has_threads'] != assistant_id):
-            st.markdown(f"<DIV style='text-align: center;'><H3>{content.MAIN_ASSISTANT_CONV_STARTERS}</H3></DIV>", unsafe_allow_html=True)
+            st.markdown(f"<DIV style='text-align: center;'><H4>{content.MAIN_ASSISTANT_CONV_STARTERS}</H4></DIV>", unsafe_allow_html=True)
             for index, conv_starter in enumerate(conv_starters):
-                st.markdown(f"<DIV><H5>{conv_starter}</H5></DIV>", unsafe_allow_html=True)
+                st.markdown(f"<DIV><H5> - {conv_starter}</H5></DIV>", unsafe_allow_html=True)
 
     # DISPLAY - USER PROMPT
         if user_prompt := st.chat_input(content.MAIN_ASSISTANT_CHAT_WELCOME):

@@ -74,6 +74,16 @@ def update_instructions(assistant_data):
     else:
         st.session_state['logger'].log(f"No updated instructions for assistant {assistant_id}", verbose=VERBOSE)
 
+def update_description(assistant_data):
+    """Update description."""
+    assistant_id, previous_description = assistant_data
+    if previous_description != st.session_state['updated_description']:
+        st.session_state['logger'].log(f'For assistant {assistant_id} update description', verbose=VERBOSE)
+        st.session_state['manager'].llm_helper.update_assistant_description(assistant_id, st.session_state['updated_description'])
+    else:
+        st.session_state['logger'].log(f"No updated description for assistant {assistant_id}", verbose=VERBOSE)
+
+
 
 def update_code_interpreter(assistant_id):
     """Change code interpreter."""
@@ -113,6 +123,7 @@ if openai_status:
     with st.form("add_assistant_form"):
         with st.expander(content.MANAGE_CREATE_ASSISTANT):
             new_assistant_name         = st.text_input(content.MANAGE_CREATE_ASSISTANT_NAME, key="new_assistant_name")
+            new_assistant_description  = st.text_area(content.MANAGE_CREATE_ASSISTANT_DESCRIPTION, key="new_assistant_description")
             new_assistant_instructions = st.text_area(content.MANAGE_CREATE_ASSISTANT_INSTRUCTIONS, key="new_assistant_instructions")
             new_assistant_submit       = st.form_submit_button(content.MANAGE_CREATE_ASSISTANT_SUBMIT)
 
@@ -120,7 +131,7 @@ if openai_status:
     if new_assistant_submit:
         if new_assistant_name != "" and new_assistant_instructions != "":
             if st.session_state['manager'].llm_helper.is_duplicated_assistant(new_assistant_name) is False:
-                st.session_state['manager'].llm_helper.create_assistant(new_assistant_name, new_assistant_instructions)
+                st.session_state['manager'].llm_helper.create_assistant(new_assistant_name, new_assistant_description, new_assistant_instructions)
                 st.session_state['logger'].log(f"New assistant {new_assistant_name} created - refreshing", verbose=VERBOSE)
                 st.rerun()
             else:
@@ -157,6 +168,10 @@ if openai_status:
     # DISPLAY - ASSISTANT Instructions
         st.text_area(content.MANAGE_SELECTED_ASSISTANT_INSTRUCTIONS, assistant_instructions, key="updated_instructions")
         st.button(content.MANAGE_UPDATE_ASSISTANT_INSTRUCTIONS, on_click=update_instructions, args=((this_assistant_id, assistant_instructions),))
+    # DISPLAY - ASSISTANT Description
+        st.text_area(content.MANAGE_SELECTED_ASSISTANT_DESCRIPTION, assistant_description, key="updated_description")
+        st.button(content.MANAGE_UPDATE_ASSISTANT_DESCRIPTION, on_click=update_description, args=((this_assistant_id, assistant_description),))
+
     # DISPLAY - ASSISTANT TOOLS TITLE
         st.markdown(f"<DIV style='text-align: center;'><H3>{content.MANAGE_SELECTED_ASSISTANT_TOOLS}</H3></DIV>", unsafe_allow_html=True)
     # DISPLAY - ASSISTANT Functions

@@ -1,5 +1,6 @@
 """This module is useful for OpenAPI interoworking."""
 import json
+import os
 import random
 import requests
 
@@ -24,10 +25,13 @@ class OpenAPIHelper:
     def get_openapi_spec(assistant_id):
         """Return OpenAPI spec for assistant."""
         file_path = OpenAPIHelper._get_openapi_spec_file_path(assistant_id)
-        with open(file_path, 'r', encoding="utf-8") as file:
-            openapi_spec = json.load(file)
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding="utf-8") as file:
+                openapi_spec = json.load(file)
 
-        return openapi_spec
+            return openapi_spec
+        
+        return None
 
     @staticmethod
     def save_openapi_spec(assistant_id, openapi_spec):

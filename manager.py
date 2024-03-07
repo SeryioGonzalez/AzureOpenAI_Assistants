@@ -41,12 +41,12 @@ class Manager:
         assistant_list = self.llm_helper.get_assistants()
         return assistant_list
 
-    def get_assistant_id_name_tuple_list(self):
+    def get_assistant_data_tuple_list(self):
         """Get Assistant id and names."""
         assistant_list = self.get_assistant_list()
-        assistant_name_id_list = [(assistant.id, assistant.name) for assistant in assistant_list]
+        assistant_data_tuple_list = [(assistant.id, assistant.name, assistant.description) for assistant in assistant_list]
 
-        return assistant_name_id_list
+        return assistant_data_tuple_list
 
     def get_assistant_name_list(self):
         """Get Assistant names."""
