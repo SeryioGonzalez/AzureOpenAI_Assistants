@@ -455,5 +455,4 @@ class LLMHelper:
 
 if __name__ == '__main__':
     llm_helper = LLMHelper()
-    status = llm_helper.check_openai_endpoint_from_settings()
-    print(status)
+    print(llm_helper.llm_client.beta.threads())
