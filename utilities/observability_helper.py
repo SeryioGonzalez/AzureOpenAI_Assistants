@@ -1,5 +1,5 @@
 """Page observability tooling."""
-
+import datetime
 
 class ObservabilityHelper:
     """Abstract logging, metrics and traces."""
@@ -19,5 +19,10 @@ class ObservabilityHelper:
 
     def log(self, message, verbose=False):
         """Log messages."""
+        # Time format
+        now = datetime.datetime.now()
+        milliseconds = now.microsecond // 1000
+        timestamp = f"{now.strftime('%Y-%m-%d %H:%M:%S')}.{milliseconds:03d}"
+        
         if verbose:
-            print(f"LOG - {message}")
+            print(f"LOG - {timestamp} - {message}")

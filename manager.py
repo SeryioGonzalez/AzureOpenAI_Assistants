@@ -43,10 +43,13 @@ class Manager:
 
     def get_assistant_data_tuple_list(self):
         """Get Assistant id and names."""
-        assistant_list = self.get_assistant_list()
-        assistant_data_tuple_list = [(assistant.id, assistant.name, assistant.description) for assistant in assistant_list]
+        try:
+            assistant_list = self.get_assistant_list()
+            assistant_data_tuple_list = [(assistant.id, assistant.name, assistant.description) for assistant in assistant_list]
 
-        return assistant_data_tuple_list
+            return assistant_data_tuple_list
+        except:
+            return None
 
     def get_assistant_name_list(self):
         """Get Assistant names."""

@@ -14,24 +14,28 @@ if 'session_id' not in st.session_state:
     st.session_state['manager'] = Manager(st.session_state['session_id'])
 
     st.session_state['logger'] = ObservabilityHelper()
-    st.session_state['logger'].log(f"New session {st.session_state['session_id']}", verbose=VERBOSE)
+    st.session_state['logger'].log(f"MAIN - New session {st.session_state['session_id']}", verbose=VERBOSE)
 
-st.session_state['logger'].log(f"Session id is {st.session_state['session_id']}", verbose=VERBOSE)
+st.session_state['logger'].log(f"MAIN - Session id is {st.session_state['session_id']}", verbose=VERBOSE)
 
 st.title(content.MAIN_TITLE_TEXT)
 
 # Check if OPENAI IS RUNNING
-openai_status = st.session_state['manager'].llm_helper.check_openai_endpoint_from_settings()
+assistant_data_list = st.session_state['manager'].get_assistant_data_tuple_list()
+# Since calls to OpenAI API is slow, make a single one with all assistant data
+openai_status = assistant_data_list is not None
+st.session_state['logger'].log(f"MAIN - OpenAI status is OK: {openai_status}", verbose=VERBOSE)
 if openai_status:
-    if st.session_state['manager'].are_there_assistants():
+    
+    if len(assistant_data_list) > 0:
         # GET ASSISTANT INFO
-        assistants = st.session_state['manager'].get_assistant_data_tuple_list()
-        assistant_ids, assistant_names, assistant_descriptions = [id for id, _, _ in assistants], [name for _, name, _ in assistants], [description for _, _, description in assistants]
+        st.session_state['logger'].log(f"MAIN - Num of assistants is {len(assistant_data_list)}", verbose=VERBOSE)
+        assistant_ids, assistant_names, assistant_descriptions = [id for id, _, _ in assistant_data_list], [name for _, name, _ in assistant_data_list], [description for _, _, description in assistant_data_list]
 
         assistant_name = st.selectbox(content.MAIN_ASSISTANT_SELECT_TEXT,  assistant_names)
         assistant_id = assistant_ids[assistant_names.index(assistant_name)]
         assistant_description = assistant_descriptions[assistant_names.index(assistant_name)]
-
+        st.session_state['logger'].log(f"MAIN - Rendering assistant_id {assistant_id}", verbose=VERBOSE)
     # DISPLAY - Assistant description
         st.write(assistant_description)
 
@@ -50,6 +54,7 @@ if openai_status:
                     st.write(content.MAIN_FILE_UPLOAD_OK)
                 else:
                     st.write(content.MAIN_FILE_UPLOAD_KO)
+        st.session_state['logger'].log(f"MAIN - Code Interpreter checked", verbose=VERBOSE)
 
         conv_starters = st.session_state['manager'].llm_helper.get_assistant_conversation_starter_values(None, assistant_id=assistant_id)
     # DISPLAY - CONVERSATION STARTERS
@@ -57,8 +62,10 @@ if openai_status:
             st.markdown(f"<DIV style='text-align: center;'><H4>{content.MAIN_ASSISTANT_CONV_STARTERS}</H4></DIV>", unsafe_allow_html=True)
             for index, conv_starter in enumerate(conv_starters):
                 st.markdown(f"<DIV><H5> - {conv_starter}</H5></DIV>", unsafe_allow_html=True)
+        st.session_state['logger'].log(f"MAIN - Conv Starters checked", verbose=VERBOSE)
         st.divider() 
     # DISPLAY - USER PROMPT
+        st.session_state['logger'].log(f"MAIN - Awaiting Input", verbose=VERBOSE)
         if user_prompt := st.chat_input(content.MAIN_ASSISTANT_CHAT_WELCOME):
             #We store if there has been user input for conv starters
             st.session_state['has_user_input'] = assistant_id
