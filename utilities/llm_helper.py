@@ -33,6 +33,7 @@ class LLMHelper:
 
     def update_env_related_attributes(self):
         self.env_helper = EnvHelper()
+
         self.llm_client = AzureOpenAI(
             azure_endpoint=self.env_helper.OPENAI_API_BASE,
             api_key=self.env_helper.OPENAI_API_KEY,

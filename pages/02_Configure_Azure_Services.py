@@ -58,6 +58,8 @@ if 'session_id' not in st.session_state:
 
     st.session_state['logger'] = ObservabilityHelper()
     st.session_state['logger'].log(f"New session created with id {st.session_state['session_id']}", verbose=VERBOSE)
+
+if 'status' not in st.session_state:
     st.session_state['status'] = check_openai_config()
 
 st.session_state['logger'].log(f"Session id is {st.session_state['session_id']}", verbose=VERBOSE)
