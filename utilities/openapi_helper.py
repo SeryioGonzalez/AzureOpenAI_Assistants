@@ -156,7 +156,7 @@ class OpenAPIHelper:
         function_data   = function_dict.get(function_name, None)
 
         if function_data == None:
-            ObservabilityHelper.log(f"ERROR - Function {function_name} not in spec", OpenAPIHelper.VERBOSE)
+            ObservabilityHelper.log(f"OPENAPI HELPER - ERROR - Function {function_name} not in spec", OpenAPIHelper.VERBOSE)
             return None
 
         function_method = function_data['method']
@@ -175,7 +175,7 @@ class OpenAPIHelper:
                 elif function_method == 'post':
                     req = requests.post(call_fqdn, json=function_args_dict)
                 else:
-                    ObservabilityHelper.log(f"ERROR - Method {function_method} not implemented", OpenAPIHelper.VERBOSE)
+                    ObservabilityHelper.log(f"OPENAPI HELPER - ERROR - Method {function_method} not implemented", OpenAPIHelper.VERBOSE)
 
                 if req.status_code == 200:
                     response = req.text
@@ -183,6 +183,6 @@ class OpenAPIHelper:
             except Exception:
                 continue
 
-        ObservabilityHelper.log("ERROR - No response from functions", OpenAPIHelper.VERBOSE)
+        ObservabilityHelper.log("OPENAPI HELPER - ERROR - No response from functions", OpenAPIHelper.VERBOSE)
 
         return None

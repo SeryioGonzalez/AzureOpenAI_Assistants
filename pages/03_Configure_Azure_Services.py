@@ -22,32 +22,29 @@ def check_openai_config():
     except Exception:
         return False
 
-        #st.success(content.VARIABLE_CONFIG_PAGE_OPENAI_OK)
-        #st.error(content.VARIABLE_CONFIG_PAGE_OPENAI_KO)
-
 
 def on_change_aoai_resource_name():
     """Change OpenAI Config. API Endopint."""
-    st.session_state['logger'].log(f"Updating AOAI RES NAME TO  {st.session_state['aoai_resource_name']}", verbose=VERBOSE)
+    st.session_state['logger'].log(f"CONF AZURE - Updating AOAI RES NAME TO  {st.session_state['aoai_resource_name']}", verbose=VERBOSE)
     st.session_state['manager'].update_env_variable("AZURE_OPENAI_RESOURCE_NAME", st.session_state['aoai_resource_name'])
     
 
 def on_change_aoai_key():
     """Change OpenAI Config. API key."""
-    st.session_state['logger'].log(f"Updating AOAI KEY TO  {st.session_state['aoai_key']}", verbose=VERBOSE)
+    st.session_state['logger'].log(f"CONF AZURE - Updating AOAI KEY TO  {st.session_state['aoai_key']}", verbose=VERBOSE)
     st.session_state['manager'].update_env_variable("AZURE_OPENAI_KEY", st.session_state['aoai_key'])
     st.session_state['status'] = check_openai_config()
     
 
 def on_change_aoai_deployment_name():
     """Change OpenAI Config. Deployment."""
-    st.session_state['logger'].log(f"Updating AOAI DEP NAME TO  {st.session_state['aoai_deployment_name']}", verbose=VERBOSE)
+    st.session_state['logger'].log(f"CONF AZURE - Updating AOAI DEP NAME TO  {st.session_state['aoai_deployment_name']}", verbose=VERBOSE)
     st.session_state['manager'].update_env_variable("AZURE_OPENAI_MODEL_DEPLOYMENT_NAME", st.session_state['aoai_deployment_name'])
     
 
 def on_change_aoai_api_version():
     """Change OpenAI Config. API VERSION."""
-    st.session_state['logger'].log(f"Updating AOAI API VER TO  {st.session_state['aoai_api_version']}", verbose=VERBOSE)
+    st.session_state['logger'].log(f"CONF AZURE - Updating AOAI API VER TO  {st.session_state['aoai_api_version']}", verbose=VERBOSE)
     st.session_state['manager'].update_env_variable("AZURE_OPENAI_API_VERSION", st.session_state['aoai_api_version'])
 
 
@@ -57,12 +54,12 @@ if 'session_id' not in st.session_state:
     st.session_state['manager'] = Manager(st.session_state['session_id'])
 
     st.session_state['logger'] = ObservabilityHelper()
-    st.session_state['logger'].log(f"New session created with id {st.session_state['session_id']}", verbose=VERBOSE)
+    st.session_state['logger'].log(f"CONF AZURE - New session created with id {st.session_state['session_id']}", verbose=VERBOSE)
 
 if 'status' not in st.session_state:
     st.session_state['status'] = check_openai_config()
 
-st.session_state['logger'].log(f"Session id is {st.session_state['session_id']}", verbose=VERBOSE)
+st.session_state['logger'].log(f"CONF AZURE - Session id is {st.session_state['session_id']}", verbose=VERBOSE)
 
 # GUI
 

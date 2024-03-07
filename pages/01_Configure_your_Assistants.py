@@ -51,10 +51,10 @@ def update_function(this_function_data):
 
     try:
         spec_json = json.loads(spec_data)
-        st.session_state['logger'].log("Updating function {new_spec_json['name']}", verbose=VERBOSE)
+        st.session_state['logger'].log("CONF ASSIST - Updating function {new_spec_json['name']}", verbose=VERBOSE)
         st.session_state['manager'].llm_helper.update_assistant_function(assistant_id, spec_json)
     except json.JSONDecodeError:
-        st.session_state['logger'].log("Not a valid function JSON", verbose=VERBOSE)
+        st.session_state['logger'].log("CONF ASSIST - Not a valid function JSON", verbose=VERBOSE)
 
 
 def delete_function(this_function_data):
@@ -67,33 +67,32 @@ def update_instructions(assistant_data):
     """Update instructions."""
     assistant_id, previous_instructions = assistant_data
     if previous_instructions != st.session_state['updated_instructions']:
-        st.session_state['logger'].log(f'''
-                                       For assistant {assistant_id} update instructions {st.session_state['updated_instructions']} 
+        st.session_state['logger'].log(f'''CONF ASSIST - For assistant {assistant_id} update instructions {st.session_state['updated_instructions']} 
                                        from {previous_instructions}''', verbose=VERBOSE)
         st.session_state['manager'].llm_helper.update_assistant_instructions(assistant_id, st.session_state['updated_instructions'])
     else:
-        st.session_state['logger'].log(f"No updated instructions for assistant {assistant_id}", verbose=VERBOSE)
+        st.session_state['logger'].log(f"CONF ASSIST - No updated instructions for assistant {assistant_id}", verbose=VERBOSE)
 
 def update_description(assistant_data):
     """Update description."""
     assistant_id, previous_description = assistant_data
     if previous_description != st.session_state['updated_description']:
-        st.session_state['logger'].log(f'For assistant {assistant_id} update description', verbose=VERBOSE)
+        st.session_state['logger'].log(f"CONF ASSIST - For assistant {assistant_id} update description", verbose=VERBOSE)
         st.session_state['manager'].llm_helper.update_assistant_description(assistant_id, st.session_state['updated_description'])
     else:
-        st.session_state['logger'].log(f"No updated description for assistant {assistant_id}", verbose=VERBOSE)
+        st.session_state['logger'].log(f"CONF ASSIST - No updated description for assistant {assistant_id}", verbose=VERBOSE)
 
 
 
 def update_code_interpreter(assistant_id):
     """Change code interpreter."""
-    st.session_state['logger'].log(f"For {assistant_id} code interpreter is {st.session_state['code_interpreter']}", verbose=VERBOSE)
+    st.session_state['logger'].log(f"CONF ASSIST - For {assistant_id} code interpreter is {st.session_state['code_interpreter']}", verbose=VERBOSE)
     st.session_state['manager'].llm_helper.update_assistant_code_interpreter_tool(assistant_id, st.session_state['code_interpreter'])
 
 
 def delete_assistant(assistant_id):
     """Delete Assistant."""
-    st.session_state['logger'].log(f"Deleting {assistant_id} ", verbose=VERBOSE)
+    st.session_state['logger'].log(f"CONF ASSIST - Deleting {assistant_id} ", verbose=VERBOSE)
     st.session_state['manager'].llm_helper.delete_assistant(assistant_id)
 
 def update_conv_starters(assistant_id, conv_starter_id):
@@ -109,10 +108,10 @@ if 'session_id' not in st.session_state:
     st.session_state['manager'] = Manager(st.session_state['session_id'])
 
     st.session_state['logger'] = ObservabilityHelper()
-    st.session_state['logger'].log(f"New session created with id {st.session_state['session_id']}", verbose=VERBOSE)
+    st.session_state['logger'].log(f"CONF ASSIST - New session created with id {st.session_state['session_id']}", verbose=VERBOSE)
 
-st.session_state['logger'].log(f"Session id is {st.session_state['session_id']}", verbose=VERBOSE)
-st.session_state['logger'].log("Configuring assistants", verbose=VERBOSE)
+st.session_state['logger'].log(f"CONF ASSIST - Session id is {st.session_state['session_id']}", verbose=VERBOSE)
+st.session_state['logger'].log("CONF ASSIST - Configuring assistants", verbose=VERBOSE)
 
 # DISPLAY - TITLE
 st.title(content.MANAGE_TITLE_TEXT)
@@ -132,14 +131,14 @@ if openai_status:
         if new_assistant_name != "" and new_assistant_instructions != "":
             if st.session_state['manager'].llm_helper.is_duplicated_assistant(new_assistant_name) is False:
                 st.session_state['manager'].llm_helper.create_assistant(new_assistant_name, new_assistant_description, new_assistant_instructions)
-                st.session_state['logger'].log(f"New assistant {new_assistant_name} created - refreshing", verbose=VERBOSE)
+                st.session_state['logger'].log(f"CONF ASSIST - New assistant {new_assistant_name} created - refreshing", verbose=VERBOSE)
                 st.rerun()
             else:
-                st.session_state['logger'].log(f"Duplicated assistant {new_assistant_name}", verbose=VERBOSE)
+                st.session_state['logger'].log(f"CONF ASSIST - Duplicated assistant {new_assistant_name}", verbose=VERBOSE)
                 st.error(content.MANAGE_CREATE_ASSISTANT_DUPLICATED)
 
         else:
-            st.session_state['logger'].log(f"Name {new_assistant_name} or instructions {new_assistant_instructions} not specified", verbose=VERBOSE)
+            st.session_state['logger'].log(f"CONF ASSIST - Name {new_assistant_name} or instructions {new_assistant_instructions} not specified", verbose=VERBOSE)
             st.error(content.MANAGE_CREATE_ASSISTANT_NO_NAME_OR_INSTRUCTIONS)
 
     # DISPLAY - ASSISTANT PANEL
@@ -183,19 +182,19 @@ if openai_status:
         # New function submitted
         if new_spec_submit:
             if OpenAPIHelper.validate_spec_json(new_spec_body):
-                st.session_state['logger'].log("Valid Spec", verbose=VERBOSE)
+                st.session_state['logger'].log("CONF ASSIST - Valid Spec", verbose=VERBOSE)
                 OpenAPIHelper.save_openapi_spec(this_assistant_id, new_spec_body)
                 openai_functions = OpenAPIHelper.extract_openai_functions_from_spec(new_spec_body)
-                st.session_state['logger'].log(f"Extracted functions {openai_functions}", verbose=VERBOSE)
+                st.session_state['logger'].log(f"CONF ASSIST - Extracted functions {openai_functions}", verbose=VERBOSE)
                 for openai_function in openai_functions:
                     st.session_state['manager'].llm_helper.create_assistant_function(this_assistant_id, openai_function)
-                    st.session_state['logger'].log("New function added - refreshing", verbose=VERBOSE)
+                    st.session_state['logger'].log("CONF ASSIST - New function added - refreshing", verbose=VERBOSE)
                 st.rerun()
             else:
                 st.error(content.MANAGE_ASSISTANT_NEW_SPEC_NOT_VALID)
-                st.session_state['logger'].log("Not a valid OpenAPI Spec", verbose=VERBOSE)
+                st.session_state['logger'].log("CONF ASSIST - Not a valid OpenAPI Spec", verbose=VERBOSE)
 
-        st.session_state['logger'].log("Listing functions", verbose=VERBOSE)
+        st.session_state['logger'].log("CONF ASSIST - Listing functions", verbose=VERBOSE)
         # Listing function fro API
         this_assistant_functions = st.session_state['manager'].llm_helper.get_functions_from_assistant(this_assistant)
         functions_data_list = get_assistant_function_data(this_assistant_functions)

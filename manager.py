@@ -88,7 +88,7 @@ class Manager:
         raw_messages = self.llm_helper.get_assistant_thread_messages(thread_id)
         if len(raw_messages) > 0:
             message_list = [{'message_value': message.content[0].text.value, 'message_role': message.role} for message in raw_messages]
-            self.observability_helper.log(f"Message received is {message_list[0]}", verbose)
+            self.observability_helper.log(f"MANAGER - Message received is {message_list[0]}", verbose)
             return message_list
 
         return []
@@ -110,18 +110,18 @@ class Manager:
         run = self.llm_helper.create_assistant_thread_run(thread_id, assistant_id)
 
         while run.status != "completed":
-            self.observability_helper.log(f"Run status is {run.status}", verbose)
+            self.observability_helper.log(f"MANAGER - Run status is {run.status}", verbose)
             if run.status == 'requires_action':
-                self.observability_helper.log(f"Next action type: {run.required_action.type}", verbose)
+                self.observability_helper.log(f"MANAGER - Next action type: {run.required_action.type}", verbose)
                 if run.required_action.type == 'submit_tool_outputs':
                     tool_output_list = []
                     for tool_call in run.required_action.submit_tool_outputs.tool_calls:
                         tool_id       = tool_call.id
                         function_name = tool_call.function.name
                         function_args = tool_call.function.arguments
-                        self.observability_helper.log(f"Required calling function {function_name} with args {function_args}")
+                        self.observability_helper.log(f"MANAGER - Required calling function {function_name} with args {function_args}")
                         function_call_result = OpenAPIHelper.call_function(function_name, function_args, openapi_spec)
-                        self.observability_helper.log(f"Function result is {function_call_result}", verbose)
+                        self.observability_helper.log(f"MANAGER - Function result is {function_call_result}", verbose)
 
                         tool_call_output = {
                             "tool_call_id": tool_id,
@@ -143,13 +143,13 @@ class Manager:
     def upload_file(self, uploaded_file, verbose=False):
         """Upload a file."""
         bytes_data = uploaded_file.getvalue()
-        self.observability_helper.log(f"Uploading file {uploaded_file.name}", verbose)
+        self.observability_helper.log(f"MANAGER - Uploading file {uploaded_file.name}", verbose)
         upload_success, file_id = self.llm_helper.upload_file(bytes_data)
 
         if upload_success:
-            self.observability_helper.log(f"Uploading success. File id {file_id}", verbose)
+            self.observability_helper.log(f"MANAGER - Uploading success. File id {file_id}", verbose)
         else:
-            self.observability_helper.log(f"Uploading of file id {file_id} failed", verbose)
+            self.observability_helper.log(f"MANAGER - Uploading of file id {file_id} failed", verbose)
 
         return upload_success, file_id
 
@@ -157,7 +157,7 @@ class Manager:
         """Add assistant to file."""
         _ = self.get_thread_id_for_assistant(assistant_id)
         self.thread_container[assistant_id]['files'].add((local_file_id, az_oai_assistants_file_id))
-        self.observability_helper.log(f"File {az_oai_assistants_file_id} to assistant id {assistant_id} OK", verbose)
+        self.observability_helper.log(f"MANAGER - File {az_oai_assistants_file_id} to assistant id {assistant_id} OK", verbose)
 
     def is_file_already_uploaded(self, assistant_id, local_file_id):
         """Check if a file has already been uploaded. Streamlit duplicates file uploads."""
@@ -174,15 +174,15 @@ class Manager:
         upload_to_assistant = False
 
         if upload_success:
-            self.observability_helper.log(f"Upload to AOAI OK. File id {file_id}", verbose)
+            self.observability_helper.log(f"MANAGER - Upload to AOAI OK. File id {file_id}", verbose)
             if self.llm_helper.create_assistant_file(assistant_id, file_id):
-                self.observability_helper.log(f"Uploading file {file_id} to assistant id {assistant_id} OK", verbose)
+                self.observability_helper.log(f"MANAGER - Uploading file {file_id} to assistant id {assistant_id} OK", verbose)
                 upload_to_assistant = True
             else:
-                self.observability_helper.log(f"Uploading file {file_id} to assistant id {assistant_id} KO", verbose)
+                self.observability_helper.log(f"MANAGER - Uploading file {file_id} to assistant id {assistant_id} KO", verbose)
                 return None
         else:
-            self.observability_helper.log(f"Uploading file {file_id} failed", verbose)
+            self.observability_helper.log(f"MANAGER - Uploading file {file_id} failed", verbose)
             return None
 
         return upload_to_assistant, file_id
@@ -198,10 +198,10 @@ class Manager:
         upload_success, az_oai_assistants_file_id = self.upload_file(file_to_upload)
 
         if upload_success:
-            self.observability_helper.log(f"Upload to AOAI OK. File id {az_oai_assistants_file_id}", verbose)
+            self.observability_helper.log(f"MANAGER - Upload to AOAI OK. File id {az_oai_assistants_file_id}", verbose)
             self.track_assistant_file_for_messages(assistant_id, local_file_id, az_oai_assistants_file_id)
 
         else:
-            self.observability_helper.log(f"File upload {az_oai_assistants_file_id} failed", verbose)
+            self.observability_helper.log(f"MANAGER - File upload {az_oai_assistants_file_id} failed", verbose)
 
         return upload_success

@@ -14,9 +14,9 @@ if 'session_id' not in st.session_state:
     st.session_state['manager'] = Manager(st.session_state['session_id'])
 
     st.session_state['logger'] = ObservabilityHelper()
-    st.session_state['logger'].log(f"New session {st.session_state['session_id']}", verbose=VERBOSE)
+    st.session_state['logger'].log(f"THREADS - New session {st.session_state['session_id']}", verbose=VERBOSE)
 
-st.session_state['logger'].log(f"Session id is {st.session_state['session_id']}", verbose=VERBOSE)
+st.session_state['logger'].log(f"THREADS - Session id is {st.session_state['session_id']}", verbose=VERBOSE)
 
 st.title(content.MAIN_TITLE_TEXT)
 
