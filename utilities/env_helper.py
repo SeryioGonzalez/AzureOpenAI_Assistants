@@ -13,7 +13,7 @@ class EnvHelper:
         self.load_vars()
 
     def load_vars(self):
-        load_dotenv(EnvHelper.ENV_FILE)
+        load_dotenv(EnvHelper.ENV_FILE, override=True)
 
     # Azure OpenAI - TO BE CONFIGURED FROM PAGE
         self.AZURE_OPENAI_RESOURCE_NAME         = os.getenv('AZURE_OPENAI_RESOURCE_NAME', '')
