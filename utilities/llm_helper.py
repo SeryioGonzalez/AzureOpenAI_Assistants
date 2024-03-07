@@ -7,12 +7,8 @@ from openai.pagination import SyncCursorPage
 from openai.types.beta.assistant import ToolFunction
 from openai.types.beta.assistant import ToolCodeInterpreter
 
-if __name__ == '__main__':
-    from env_helper   import EnvHelper
-    from observability_helper import ObservabilityHelper
-else:
-    from utilities.env_helper   import EnvHelper
-    from utilities.observability_helper import ObservabilityHelper
+from utilities.env_helper   import EnvHelper
+from utilities.observability_helper import ObservabilityHelper
 
 class LLMHelper:
     """Class managing LLM interaction."""
@@ -451,8 +447,3 @@ class LLMHelper:
             return True  # Parsing succeeded, the string is valid JSON
         except json.JSONDecodeError:
             return False  # Parsing failed, the string is not valid JSON
-
-
-if __name__ == '__main__':
-    llm_helper = LLMHelper()
-    print(llm_helper.llm_client.beta.threads())
