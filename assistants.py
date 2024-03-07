@@ -20,6 +20,7 @@ st.session_state['logger'].log(f"Session id is {st.session_state['session_id']}"
 
 st.title(content.MAIN_TITLE_TEXT)
 
+# Check if OPENAI IS RUNNING
 openai_status = st.session_state['manager'].llm_helper.check_openai_endpoint_from_settings()
 if openai_status:
     if st.session_state['manager'].are_there_assistants():
@@ -52,17 +53,17 @@ if openai_status:
 
         conv_starters = st.session_state['manager'].llm_helper.get_assistant_conversation_starter_values(None, assistant_id=assistant_id)
     # DISPLAY - CONVERSATION STARTERS
-        if len(conv_starters) > 0 and ('has_threads' not in st.session_state or st.session_state['has_threads'] != assistant_id):
+        if len(conv_starters) > 0 and ('has_user_input' not in st.session_state or st.session_state['has_user_input'] != assistant_id):
             st.markdown(f"<DIV style='text-align: center;'><H4>{content.MAIN_ASSISTANT_CONV_STARTERS}</H4></DIV>", unsafe_allow_html=True)
             for index, conv_starter in enumerate(conv_starters):
                 st.markdown(f"<DIV><H5> - {conv_starter}</H5></DIV>", unsafe_allow_html=True)
-
+        st.divider() 
     # DISPLAY - USER PROMPT
         if user_prompt := st.chat_input(content.MAIN_ASSISTANT_CHAT_WELCOME):
+            #We store if there has been user input for conv starters
+            st.session_state['has_user_input'] = assistant_id
             # USER PROMPT
             st.chat_message("user").markdown(user_prompt)
-            #We store if there has been threads for conv starters
-            st.session_state['has_threads'] = assistant_id
             # THREAD COMPLETION
             thread_run_messages = st.session_state['manager'].run_thread(user_prompt, assistant_id)
             st.session_state['logger'].log(f"Thread messages {thread_run_messages}", verbose=VERBOSE)
