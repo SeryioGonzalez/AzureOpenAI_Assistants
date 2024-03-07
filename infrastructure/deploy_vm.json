@@ -6,11 +6,6 @@
             "defaultValue": "assistants",
             "type": "String"
         },
-
-        "vm_user": {
-            "defaultValue": "streamlit",
-            "type": "String"
-        },
         "vm_password": {
             "defaultValue": "Sergio1sergio2",
             "type": "String"
@@ -155,7 +150,7 @@
                 },
                 "osProfile": {
                     "computerName": "[parameters('vm_name')]",
-                    "adminUsername": "[parameters('vm_user')]",
+                    "adminUsername": "streamlit",
                     "adminPassword": "[parameters('vm_password')]",
                     "customData": "[base64(parameters('customData'))]",
                     "linuxConfiguration": {

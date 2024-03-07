@@ -14,3 +14,5 @@ wget -O /etc/systemd/system/streamlit_app.service https://raw.githubusercontent.
 sudo systemctl daemon-reload
 sudo systemctl enable streamlit_app.service
 sudo systemctl start streamlit_app.service
+
+chown -R streamlit:streamlit /home/streamlit/AzureOpenAI_Assistants
