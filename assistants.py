@@ -51,7 +51,7 @@ if openai_status:
         if st.session_state['manager'].llm_helper.assistant_has_code_interpreter(assistant_id):
             file = st.file_uploader(content.MAIN_ASSISTANT_UPLOAD_DOCUMENT)
             if file is not None:
-                st.session_state['logger'].log("New uploaded file", verbose=VERBOSE)
+                st.session_state['logger'].log("MAIN - New uploaded file", verbose=VERBOSE)
                 if st.session_state['manager'].upload_file_for_assistant_messages(assistant_id, file):
                     st.write(content.MAIN_FILE_UPLOAD_OK)
                 else:
@@ -75,7 +75,7 @@ if openai_status:
             st.chat_message("user").markdown(user_prompt)
             # THREAD COMPLETION
             thread_run_messages = st.session_state['manager'].run_thread(user_prompt, assistant_id)
-            st.session_state['logger'].log(f"Thread messages {thread_run_messages}", verbose=VERBOSE)
+            st.session_state['logger'].log(f"MAIN - Thread messages {thread_run_messages}", verbose=VERBOSE)
             st.chat_message("assistant").markdown(thread_run_messages[0]['message_value'])
 
     # DISPLAY - NO ASSISTANTS CREATED

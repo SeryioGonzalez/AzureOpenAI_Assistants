@@ -25,9 +25,8 @@ openai_status = st.session_state['manager'].llm_helper.check_openai_endpoint_fro
 if openai_status:
     if st.session_state['manager'].are_there_assistants():
         # GET ASSISTANT INFO
-        assistants = st.session_state['manager'].get_assistant_data_tuple_list()
-        assistant_ids, assistant_names, assistant_descriptions = [id for id, _, _ in assistants], [name for _, name, _ in assistants], [description for _, _, description in assistants]
-
+        assistant_data_list = st.session_state['manager'].get_assistant_data_tuple_list()
+        assistant_ids, assistant_names, assistant_descriptions, assistant_created_at = zip(*assistant_data_list)
         assistant_name = st.selectbox(content.MAIN_ASSISTANT_SELECT_TEXT,  assistant_names)
         assistant_id = assistant_ids[assistant_names.index(assistant_name)]
         assistant_description = assistant_descriptions[assistant_names.index(assistant_name)]

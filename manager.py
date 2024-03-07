@@ -192,7 +192,7 @@ class Manager:
         local_file_id = file_to_upload.file_id
 
         if self.is_file_already_uploaded(assistant_id, local_file_id):
-            self.observability_helper.log("This file already exists. Not uploading Again", verbose)
+            self.observability_helper.log("MANAGER - This file already exists. Not uploading Again", verbose)
             return False
 
         upload_success, az_oai_assistants_file_id = self.upload_file(file_to_upload)
